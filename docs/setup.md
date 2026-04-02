@@ -25,13 +25,13 @@ docker compose up -d minio postgres minio-init
 ## 3. Verify Health
 
 ```bash
-./scripts/healthcheck.sh
+sudo ./scripts/healthcheck.sh
 ```
 
 ## 4. Run Data Pipeline (Local CSV Starter)
 
 ```bash
-./scripts/setup_python_env.sh
+sudo ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
@@ -41,8 +41,8 @@ python3 scripts/silver_to_gold.py
 ## 5. Run Security Checks (End of Stage)
 
 ```bash
-./scripts/security_scan.sh
-./scripts/remediate_python_vulns.sh
+sudo ./scripts/security_scan.sh
+sudo ./scripts/remediate_python_vulns.sh
 ```
 
 ## Notes

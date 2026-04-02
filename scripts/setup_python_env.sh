@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
@@ -31,10 +35,10 @@ fi
 source "${VENV_DIR}/bin/activate"
 
 echo "[python-setup] Upgrading pip/setuptools/wheel"
-python -m pip install --upgrade pip setuptools wheel
+python3 -m pip install --upgrade pip setuptools wheel
 
 echo "[python-setup] Installing project dependencies profile: ${INSTALL_PROFILE}"
-python -m pip install -e ".[${INSTALL_PROFILE}]"
+python3 -m pip install -e ".[${INSTALL_PROFILE}]"
 
 if [[ "${INSTALL_PROFILE}" != "lakehouse" ]]; then
   echo "[python-setup] Note: install optional lakehouse deps with INSTALL_PROFILE=lakehouse"

@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <backup.sql>"
   exit 1

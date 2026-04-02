@@ -15,11 +15,11 @@ cat data/output/gold_daily_revenue.csv
 
 ## Service Verification
 ```bash
-./scripts/healthcheck.sh
+sudo ./scripts/healthcheck.sh
 docker compose ps
 ```
 
 ## Security Verification
 ```bash
-./scripts/security_scan.sh
+sudo ./scripts/security_scan.sh
 ```

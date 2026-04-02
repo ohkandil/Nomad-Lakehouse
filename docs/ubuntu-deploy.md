@@ -15,18 +15,18 @@ docker compose logs -f postgres
 
 Health:
 ```bash
-./scripts/healthcheck.sh
+sudo ./scripts/healthcheck.sh
 ```
 
 ## Metadata Backup and Restore
 Backup:
 ```bash
-./scripts/backup_metadata.sh ./backups
+sudo ./scripts/backup_metadata.sh ./backups
 ```
 
 Restore:
 ```bash
-./scripts/restore_metadata.sh ./backups/<file>.sql
+sudo ./scripts/restore_metadata.sh ./backups/<file>.sql
 ```
 
 ## Minimum Hardening
@@ -39,6 +39,6 @@ Restore:
 ## Stage Security Procedure
 Run after each implementation stage:
 ```bash
-./scripts/security_scan.sh
+sudo ./scripts/security_scan.sh
 ```
 Record results in README stage notes.

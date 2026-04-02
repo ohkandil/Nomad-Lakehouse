@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 check() {
   local name="$1"
   local url="$2"

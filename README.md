@@ -42,13 +42,13 @@ docker compose up -d minio postgres minio-init
 1. Run health checks
 
 ```bash
-./scripts/healthcheck.sh
+sudo ./scripts/healthcheck.sh
 ```
 
 1. Run starter data flow
 
 ```bash
-./scripts/setup_python_env.sh
+sudo ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
@@ -62,13 +62,13 @@ After each implementation stage:
 1. Run CVE/dependency and security checks
 
 ```bash
-./scripts/security_scan.sh
+sudo ./scripts/security_scan.sh
 ```
 
 1. If vulnerabilities are found, run automated remediation
 
 ```bash
-./scripts/remediate_python_vulns.sh
+sudo ./scripts/remediate_python_vulns.sh
 ```
 
 1. Record findings and remediations in README stage notes.
@@ -88,14 +88,16 @@ CI also enforces security-related checks:
 
 Latest remediation workflow:
 
-- Run `./scripts/remediate_python_vulns.sh` to upgrade vulnerable packages already present in `.venv` to safe minimum versions.
+- Run `sudo ./scripts/remediate_python_vulns.sh` to upgrade vulnerable packages already present in `.venv` to safe minimum versions.
 - Re-run `python -m pip_audit` and update this section with remaining findings.
+- Re-run `python3 -m pip_audit` and update this section with remaining findings.
 
 Remediation policy:
 
 - Use project-scoped virtual environments for repeatable scans.
 - Upgrade vulnerable dependencies in the execution environment before production deployment.
 - Re-run `python -m pip_audit` at the end of each stage and update this section.
+- Re-run `python3 -m pip_audit` at the end of each stage and update this section.
 
 ## Stage 1 Validation On Your Local Server
 
@@ -139,7 +141,7 @@ chmod +x scripts/*.sh
 ### 5. Start Stage 1 services
 
 ```bash
-./scripts/setup_minio.sh
+sudo ./scripts/setup_minio.sh
 docker compose ps
 ```
 
@@ -152,7 +154,7 @@ Expected running services:
 ### 6. Validate health endpoints
 
 ```bash
-./scripts/healthcheck.sh
+sudo ./scripts/healthcheck.sh
 curl -fsS http://localhost:9000/minio/health/live
 docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${POSTGRES_DB:-iceberg}"
 ```
@@ -160,17 +162,17 @@ docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${
 ### 7. Run starter data flow
 
 ```bash
-./scripts/setup_python_env.sh
+sudo ./scripts/setup_python_env.sh
 source .venv/bin/activate
-python scripts/create_bronze_tables.py
-python scripts/bronze_to_silver.py
-python scripts/silver_to_gold.py
+python3 scripts/create_bronze_tables.py
+python3 scripts/bronze_to_silver.py
+python3 scripts/silver_to_gold.py
 ```
 
 If optional lakehouse extras are needed later:
 
 ```bash
-INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
+sudo INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 ```
 
 Check outputs:
@@ -183,16 +185,16 @@ cat data/output/gold_daily_revenue.csv
 ### 8. Run mandatory stage security checks
 
 ```bash
-./scripts/security_scan.sh
-python -m pip_audit
-python -m bandit -r scripts
+sudo ./scripts/security_scan.sh
+python3 -m pip_audit
+python3 -m bandit -r scripts
 ```
 
 If `pip-audit` reports vulnerabilities, run:
 
 ```bash
-./scripts/remediate_python_vulns.sh
-python -m pip_audit
+sudo ./scripts/remediate_python_vulns.sh
+python3 -m pip_audit
 ```
 
 ### 9. Run hardening audit checklist

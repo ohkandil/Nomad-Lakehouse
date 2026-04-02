@@ -3,7 +3,7 @@
 ## Development Setup
 
 1. Use Ubuntu 24.04 LTS (recommended) or compatible Linux environment.
-1. Run dependency bootstrap with `./scripts/setup_python_env.sh`.
+1. Run dependency bootstrap with `sudo ./scripts/setup_python_env.sh`.
 1. Activate the environment with `source .venv/bin/activate`.
 
 ## Before Opening a PR
@@ -14,7 +14,7 @@
 - Run tests:
   - `pytest`
 - Run security checks:
-  - `./scripts/security_scan.sh`
+  - `sudo ./scripts/security_scan.sh`
 
 ## Security Expectations
 

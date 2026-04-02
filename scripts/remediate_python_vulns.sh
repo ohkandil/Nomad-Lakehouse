@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
 
@@ -13,7 +17,7 @@ fi
 source "${VENV_DIR}/bin/activate"
 
 echo "[remediate] Upgrading packaging tooling"
-python -m pip install --upgrade "pip>=26.0" "setuptools>=78.1.1" "wheel>=0.46.2"
+python3 -m pip install --upgrade "pip>=26.0" "setuptools>=78.1.1" "wheel>=0.46.2"
 
 declare -A MIN_SAFE
 MIN_SAFE[certifi]="2024.7.4"
@@ -32,22 +36,22 @@ MIN_SAFE[urllib3]="2.6.3"
 UPGRADE_LIST=()
 
 for pkg in "${!MIN_SAFE[@]}"; do
-  if python -m pip show "$pkg" >/dev/null 2>&1; then
+  if python3 -m pip show "$pkg" >/dev/null 2>&1; then
     UPGRADE_LIST+=("${pkg}>=${MIN_SAFE[$pkg]}")
   fi
 done
 
 if [[ ${#UPGRADE_LIST[@]} -gt 0 ]]; then
   echo "[remediate] Upgrading vulnerable installed packages"
-  python -m pip install --upgrade "${UPGRADE_LIST[@]}"
+  python3 -m pip install --upgrade "${UPGRADE_LIST[@]}"
 else
   echo "[remediate] None of the known vulnerable packages are installed in .venv"
 fi
 
 echo "[remediate] Re-installing project dependencies"
-python -m pip install -e ".[dev]"
+python3 -m pip install -e ".[dev]"
 
 echo "[remediate] Re-running vulnerability scan"
-python -m pip_audit || true
+python3 -m pip_audit || true
 
 echo "[remediate] Completed"
