@@ -48,6 +48,8 @@ docker compose up -d minio postgres minio-init
 1. Run starter data flow
 
 ```bash
+./scripts/setup_python_env.sh
+source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
@@ -147,13 +149,17 @@ docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${
 ### 7. Run starter data flow
 
 ```bash
-python3 -m venv .venv
+./scripts/setup_python_env.sh
 source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e .[dev]
 python scripts/create_bronze_tables.py
 python scripts/bronze_to_silver.py
 python scripts/silver_to_gold.py
+```
+
+If optional lakehouse extras are needed later:
+
+```bash
+INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 ```
 
 Check outputs:
@@ -193,6 +199,7 @@ sudo ./scripts/hardening_checklist.sh
 ├── pyproject.toml
 ├── scripts/
 │   ├── setup_minio.sh
+│   ├── setup_python_env.sh
 │   ├── healthcheck.sh
 │   ├── security_scan.sh
 │   ├── hardening_checklist.sh
