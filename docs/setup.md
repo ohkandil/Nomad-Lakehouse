@@ -16,7 +16,7 @@ cp .env.example .env
 
 ## 2. Start Core Services
 ```bash
-docker compose up -d minio postgres iceberg-rest minio-init
+docker compose up -d minio postgres minio-init
 ```
 
 ## 3. Verify Health
@@ -39,4 +39,4 @@ python3 scripts/silver_to_gold.py
 ## Notes
 - MinIO API: port 9000
 - MinIO Console: port 9001
-- Iceberg REST: port 8181
+- PostgreSQL catalog backend: port 5432

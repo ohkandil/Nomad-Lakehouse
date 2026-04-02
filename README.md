@@ -7,8 +7,8 @@ Production-grade local lakehouse architecture running on Ubuntu Linux with open-
 This repository demonstrates modern lakehouse patterns without cloud spend:
 
 - MinIO as S3-compatible object storage
-- Apache Iceberg REST Catalog for table metadata APIs
-- PostgreSQL for catalog metadata persistence
+- Apache Iceberg with PostgreSQL-backed JDBC catalog metadata
+- PostgreSQL as JDBC catalog backend
 - Python medallion starter pipelines (Bronze -> Silver -> Gold)
 - Docker Compose for reproducible local/server deployment
 
@@ -17,7 +17,7 @@ This repository demonstrates modern lakehouse patterns without cloud spend:
 Stage 1 (Foundation) is in progress and includes:
 
 - Linux-first (Ubuntu 24.04 LTS) deployment baseline
-- `docker-compose.yml` with MinIO + PostgreSQL + Iceberg REST Catalog
+- `docker-compose.yml` with MinIO + PostgreSQL (JDBC catalog backend)
 - Bash operational scripts for setup, health, backup/restore, and security scanning
 - Starter transformation scripts and sample dataset
 - CI workflow with lint, type-check, tests, and security checks
@@ -36,7 +36,7 @@ cp .env.example .env
 1. Start core services
 
 ```bash
-docker compose up -d minio postgres iceberg-rest minio-init
+docker compose up -d minio postgres minio-init
 ```
 
 1. Run health checks
@@ -64,7 +64,7 @@ After each implementation stage:
 ```
 
 1. Record findings and remediations in README stage notes.
-1. Do not mark a stage complete until HIGH/CRITICAL issues are triaged.
+2. Do not mark a stage complete until HIGH/CRITICAL issues are triaged.
 
 CI also enforces security-related checks:
 
@@ -134,14 +134,14 @@ Expected running services:
 
 - `minio`
 - `postgres`
-- `iceberg-rest`
+- `minio-init` (exits after bucket creation)
 
 ### 6. Validate health endpoints
 
 ```bash
 ./scripts/healthcheck.sh
 curl -fsS http://localhost:9000/minio/health/live
-curl -fsS http://localhost:8181/v1/config
+docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${POSTGRES_DB:-iceberg}"
 ```
 
 ### 7. Run starter data flow

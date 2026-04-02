@@ -35,7 +35,7 @@ def main() -> None:
     sample_path = Path("data/sample/orders.csv")
     orders = read_orders_csv(sample_path)
     print(f"[bronze] Validated {len(orders)} rows from {sample_path}")
-    print("[bronze] Next step: write rows to Iceberg REST catalog table")
+    print("[bronze] Next step: write rows to Iceberg table via JDBC catalog backend")
 
 
 if __name__ == "__main__":

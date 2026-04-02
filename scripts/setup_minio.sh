@@ -13,12 +13,12 @@ if [[ ! -f .env ]]; then
 fi
 
 echo "[setup] Starting core services"
-docker compose up -d minio postgres iceberg-rest minio-init
+docker compose up -d minio postgres minio-init
 
-echo "[setup] Waiting for MinIO and catalog health"
+echo "[setup] Waiting for MinIO and PostgreSQL health"
 for _ in {1..30}; do
   if curl -fsS "http://localhost:${MINIO_API_PORT:-9000}/minio/health/live" >/dev/null \
-    && curl -fsS "http://localhost:${ICEBERG_REST_PORT:-8181}/v1/config" >/dev/null; then
+    && docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${POSTGRES_DB:-iceberg}" >/dev/null; then
     echo "[setup] Services are healthy"
     exit 0
   fi

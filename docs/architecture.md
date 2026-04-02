@@ -2,8 +2,8 @@
 
 ## Components
 - MinIO: S3-compatible object storage for Iceberg files
-- Iceberg REST Catalog: table metadata API
-- PostgreSQL: catalog metadata backend
+- JDBC catalog backend: metadata persistence using PostgreSQL
+- PostgreSQL: catalog metadata database
 - Python scripts: medallion pipeline starter
 - DuckDB (tools profile): local analytics entry point
 

@@ -7,7 +7,7 @@ This plan is derived from the MVP definition in Local_Lakehouse_MVP.md and adapt
 - Runtime target: Ubuntu server (Linux-first deployment)
 - Hardware target: 4GB RAM class machine, low-end CPU
 - Ubuntu baseline: 24.04 LTS
-- Catalog choice: REST Catalog
+- Catalog choice: JDBC catalog (PostgreSQL backend)
 - Docker mode: Rootful Docker
 - Exposure model: LAN-only (private network)
 - Go-to-market: Build + blog/launch in parallel
@@ -30,7 +30,7 @@ This plan is derived from the MVP definition in Local_Lakehouse_MVP.md and adapt
 ### In scope for MVP
 - MinIO object storage
 - Apache Iceberg table workflows
-- One catalog implementation (REST Catalog)
+- One catalog implementation (JDBC catalog)
 - DuckDB analytics
 - Python pipelines for medallion layers
 - Docker Compose orchestration
@@ -49,8 +49,9 @@ This plan is derived from the MVP definition in Local_Lakehouse_MVP.md and adapt
 - Query engine: DuckDB
 - Processing: Python + PyIceberg and/or PySpark (resource-aware)
 - Metadata backend: PostgreSQL (if required by selected catalog)
+- Metadata backend: PostgreSQL (JDBC catalog)
 - Orchestration: Docker Compose
-- Catalog: REST Catalog (MVP default)
+- Catalog: JDBC catalog (MVP default)
 
 ### Linux-first implementation strategy (Ubuntu)
 - Treat Ubuntu as the primary runtime and validation environment
@@ -105,7 +106,7 @@ This plan is derived from the MVP definition in Local_Lakehouse_MVP.md and adapt
 - First ingestion script from CSV to Iceberg
 
 ### Tasks
-- Configure REST Catalog and validate connectivity
+- Configure JDBC catalog backend and validate connectivity
 - Implement create_bronze_tables script
 - Add minimal dataset and ingestion contract
 - Validate metadata and files in object storage
@@ -216,7 +217,7 @@ This plan is derived from the MVP definition in Local_Lakehouse_MVP.md and adapt
 - Confirm default memory profile works
 
 ### Gate B (End of Week 2)
-- Confirm REST Catalog integration and Bronze ingestion contract
+- Confirm JDBC catalog integration and Bronze ingestion contract
 
 ### Gate C (End of Week 3)
 - Confirm medallion flow is complete and reproducible
@@ -233,6 +234,6 @@ Future optional decision: when to add reverse proxy and TLS for internet-facing 
 
 1. Scaffold repository structure and baseline compose file for Ubuntu 24.04.
 2. Implement low-resource profile first, then standard profile.
-3. Implement REST Catalog configuration and validate Bronze table creation.
+4. Implement JDBC catalog configuration and validate Bronze table creation.
 4. Build Bronze ingestion first vertical slice (small but complete).
 5. Start architecture doc and blog outline in parallel.

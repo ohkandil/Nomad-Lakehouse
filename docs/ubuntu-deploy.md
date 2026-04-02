@@ -10,7 +10,7 @@ docker compose down
 Logs:
 ```bash
 docker compose logs -f minio
-docker compose logs -f iceberg-rest
+docker compose logs -f postgres
 ```
 
 Health:

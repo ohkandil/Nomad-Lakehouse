@@ -363,4 +363,4 @@ Be prepared to discuss:
 * How ACID guarantees work in a distributed system  
 * Challenges with local development vs cloud at scale
 
-*This project will position you as someone who understands modern data architecture, **can learn new technologies independently, and delivers production-quality work.***
+*This project will position you as someone who understands modern data architecture, **can learn new technologies independently, and delivers production-quality work.**  *

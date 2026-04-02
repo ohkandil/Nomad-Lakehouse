@@ -13,6 +13,12 @@ check() {
 }
 
 check "MinIO" "http://localhost:${MINIO_API_PORT:-9000}/minio/health/live"
-check "Iceberg REST catalog" "http://localhost:${ICEBERG_REST_PORT:-8181}/v1/config"
+
+if docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${POSTGRES_DB:-iceberg}" >/dev/null; then
+  echo "[ok] PostgreSQL catalog backend"
+else
+  echo "[fail] PostgreSQL catalog backend"
+  exit 1
+fi
 
 echo "[ok] Core service health checks passed"
