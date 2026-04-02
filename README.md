@@ -65,6 +65,12 @@ After each implementation stage:
 ./scripts/security_scan.sh
 ```
 
+1. If vulnerabilities are found, run automated remediation
+
+```bash
+./scripts/remediate_python_vulns.sh
+```
+
 1. Record findings and remediations in README stage notes.
 2. Do not mark a stage complete until HIGH/CRITICAL issues are triaged.
 
@@ -79,6 +85,11 @@ CI also enforces security-related checks:
 - `bandit` result: no issues identified in `scripts`.
 - `pip-audit` reported 4 vulnerabilities in this local Python environment.
 - Findings: `cryptography` 46.0.5 -> 46.0.6, `pygments` 2.19.2 -> 2.20.0, `tornado` 6.5.4 -> 6.5.5 (GHSA-78cv-mqj4-43f7, CVE-2026-31958)
+
+Latest remediation workflow:
+
+- Run `./scripts/remediate_python_vulns.sh` to upgrade vulnerable packages already present in `.venv` to safe minimum versions.
+- Re-run `python -m pip_audit` and update this section with remaining findings.
 
 Remediation policy:
 
@@ -177,6 +188,13 @@ python -m pip_audit
 python -m bandit -r scripts
 ```
 
+If `pip-audit` reports vulnerabilities, run:
+
+```bash
+./scripts/remediate_python_vulns.sh
+python -m pip_audit
+```
+
 ### 9. Run hardening audit checklist
 
 ```bash
@@ -202,6 +220,7 @@ sudo ./scripts/hardening_checklist.sh
 │   ├── setup_python_env.sh
 │   ├── healthcheck.sh
 │   ├── security_scan.sh
+│   ├── remediate_python_vulns.sh
 │   ├── hardening_checklist.sh
 │   ├── backup_metadata.sh
 │   ├── restore_metadata.sh

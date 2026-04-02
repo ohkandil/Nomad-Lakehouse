@@ -42,6 +42,7 @@ python3 scripts/silver_to_gold.py
 
 ```bash
 ./scripts/security_scan.sh
+./scripts/remediate_python_vulns.sh
 ```
 
 ## Notes
