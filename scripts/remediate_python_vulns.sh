@@ -8,8 +8,8 @@ fi
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="${PROJECT_ROOT}/.venv"
 
-if [[ ! -d "${VENV_DIR}" ]]; then
-  echo "[remediate] .venv not found. Bootstrapping Python environment first."
+if [[ ! -d "${VENV_DIR}" || ! -f "${VENV_DIR}/bin/activate" ]]; then
+  echo "[remediate] .venv missing or invalid. Bootstrapping Python environment first."
   "${PROJECT_ROOT}/scripts/setup_python_env.sh"
 fi
 

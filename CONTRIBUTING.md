@@ -1,23 +1,57 @@
 # Contributing
 
-## Development Setup
+Thanks for contributing to Nomad Lakehouse.
 
-1. Use Ubuntu 24.04 LTS (recommended) or compatible Linux environment.
-1. Run dependency bootstrap with `sudo ./scripts/setup_python_env.sh`.
-1. Activate the environment with `source .venv/bin/activate`.
+## Principles
 
-## Before Opening a PR
+- Keep the project lightweight and local-first
+- Preserve modular scripts and clear separation of concerns
+- Prefer explicit, reproducible commands over hidden automation
+- Maintain security checks as part of normal development flow
+- Keep documentation in sync with every behavior change
 
-- Run lint and type checks:
-  - `ruff check .`
-  - `mypy scripts`
-- Run tests:
-  - `pytest`
-- Run security checks:
-  - `sudo ./scripts/security_scan.sh`
+## Local Development Setup
+
+```bash
+chmod +x scripts/*.sh
+sudo ./scripts/setup_python_env.sh
+source .venv/bin/activate
+```
+
+## Pull Request Checklist
+
+Run these before opening a PR:
+
+```bash
+python3 -m ruff check .
+python3 -m mypy scripts
+python3 -m pytest
+sudo ./scripts/security_scan.sh
+```
+
+For operational workflow changes, include updates to:
+
+- `README.md`
+- `docs/setup.md`
+- `docs/ubuntu-deploy.md`
+- `docs/week1-closure.md` (when Week 1 closure evidence is affected)
+
+If `pip-audit` reports issues:
+
+```bash
+sudo ./scripts/remediate_python_vulns.sh
+python3 -m pip_audit
+```
+
+## Commit Guidelines
+
+- Keep commits focused and atomic
+- Include docs updates for behavior changes
+- Add or update tests when logic changes
+- Use descriptive commit messages
 
 ## Security Expectations
 
-- Never commit real secrets or production credentials.
-- Keep `.env` local and update `.env.example` when adding config.
-- Prefer dependency versions with known vulnerability fixes.
+- Never commit secrets or production credentials
+- Keep `.env` local and version only `.env.example`
+- Treat High/Critical security findings as release blockers

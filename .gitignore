@@ -25,3 +25,6 @@ logs/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
+
+# Planning docs
+Local_Lakehouse_MVP.md

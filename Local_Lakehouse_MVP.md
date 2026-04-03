@@ -1,6 +1,6 @@
 # **Local Data Lakehouse MVP**
 
-*Build a Production-Grade Lakehouse on MinIO & Apache Iceberg*
+## Build a Production-Grade Lakehouse on MinIO & Apache Iceberg
 
 Entry-Level Portfolio Project | No Cloud Costs Required
 
@@ -363,4 +363,4 @@ Be prepared to discuss:
 * How ACID guarantees work in a distributed system  
 * Challenges with local development vs cloud at scale
 
-*This project will position you as someone who understands modern data architecture, **can learn new technologies independently, and delivers production-quality work.**  *
+This project will position you as someone who understands modern data architecture, can learn new technologies independently, and delivers production-quality work.

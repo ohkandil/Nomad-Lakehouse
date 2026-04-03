@@ -31,6 +31,12 @@ if [[ ! -d "${VENV_DIR}" ]]; then
   "${PYTHON_BIN}" -m venv "${VENV_DIR}"
 fi
 
+if [[ ! -f "${VENV_DIR}/bin/activate" ]]; then
+  echo "[python-setup] Existing .venv is not a Linux virtualenv layout. Recreating."
+  rm -rf "${VENV_DIR}"
+  "${PYTHON_BIN}" -m venv "${VENV_DIR}"
+fi
+
 # shellcheck disable=SC1091
 source "${VENV_DIR}/bin/activate"
 

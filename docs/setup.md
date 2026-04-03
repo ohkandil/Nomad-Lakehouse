@@ -2,33 +2,48 @@
 
 ## Prerequisites
 
-- Ubuntu 24.04 LTS server
-- Docker Engine + Docker Compose plugin
+- Ubuntu 24.04 LTS
+- Docker Engine with Compose plugin
 - Python 3.11+
-- curl
+- `curl`, `git`
 
-## 1. Clone and Configure
+## Installation
 
 ```bash
 git clone <repo-url> nomad-lakehouse
 cd nomad-lakehouse
 cp .env.example .env
-# Edit .env and rotate passwords
+chmod +x scripts/*.sh
 ```
 
-## 2. Start Core Services
+Edit `.env` and rotate at least:
+
+- `MINIO_ROOT_PASSWORD`
+- `POSTGRES_PASSWORD`
+
+## Start Services
 
 ```bash
-docker compose up -d minio postgres minio-init
+sudo ./scripts/setup_minio.sh
+docker compose ps
 ```
 
-## 3. Verify Health
+## Configure Auto-Start (systemd)
+
+```bash
+sudo ./scripts/install_systemd_service.sh
+systemctl is-enabled nomad-lakehouse.service
+```
+
+## Verify Service Health
 
 ```bash
 sudo ./scripts/healthcheck.sh
+curl -fsS http://localhost:9000/minio/health/live
+docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${POSTGRES_DB:-iceberg}"
 ```
 
-## 4. Run Data Pipeline (Local CSV Starter)
+## Run Starter Pipeline
 
 ```bash
 sudo ./scripts/setup_python_env.sh
@@ -38,15 +53,23 @@ python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
-## 5. Run Security Checks (End of Stage)
+## Security Gate
 
 ```bash
 sudo ./scripts/security_scan.sh
-sudo ./scripts/remediate_python_vulns.sh
+python3 -m pip_audit
+python3 -m bandit -r scripts
 ```
 
-## Notes
+If vulnerabilities are reported:
 
-- MinIO API: port 9000
-- MinIO Console: port 9001
-- PostgreSQL catalog backend: port 5432
+```bash
+sudo ./scripts/remediate_python_vulns.sh
+python3 -m pip_audit
+```
+
+## Ports
+
+- MinIO API: `9000`
+- MinIO Console: `9001`
+- PostgreSQL: `5432`
