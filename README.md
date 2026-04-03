@@ -1,2 +1,131 @@
-# nomad-lakehouse
-🚀 Production-grade data lakehouse running 100% locally on your laptop/homelab/local server—no cloud, no costs, no credit card required.
+# Nomad Lakehouse
+
+Lightweight, local-first data lakehouse for Ubuntu servers and homelabs.
+
+Nomad focuses on practical Bronze/Silver/Gold workflows using open-source components, with minimal infrastructure overhead and strong security defaults.
+
+## Main Goal
+
+Nomad is designed to fill the gap between toy local demos and heavyweight enterprise lakehouse stacks.
+
+It is intentionally:
+
+- Lightweight and resource-aware
+- Easy to deploy on local servers
+- Portable across machines using Docker Compose
+- Modular, so each operational function is script-based and composable
+
+## Stack and Why
+
+- MinIO: S3-compatible object storage for local data lake files
+- PostgreSQL: stable JDBC metadata backend for catalog state
+- Apache Iceberg workflow path: modern table-format direction for ACID/versioned data patterns
+- Python 3: portable pipeline and validation scripts
+- DuckDB: fast local query engine for analytics and verification
+- Docker Compose: reproducible service orchestration on a single machine
+
+## Quick Start (Ubuntu 24.04)
+
+```bash
+git clone https://github.com/ohkandil/nomad-lakehouse nomad-lakehouse
+cd nomad-lakehouse
+cp .env.example .env
+chmod +x scripts/*.sh
+sudo ./scripts/setup_minio.sh
+sudo ./scripts/setup_python_env.sh
+source .venv/bin/activate
+python3 scripts/create_bronze_tables.py
+python3 scripts/bronze_to_silver.py
+python3 scripts/silver_to_gold.py
+```
+
+## Current Implementation (Stage 1)
+
+- Linux-first deployment baseline
+- MinIO + PostgreSQL services with health checks
+- Bucket bootstrap (`minio-init`) and environment bootstrap scripts
+- Bronze -> Silver -> Gold starter pipeline
+- CI with lint, typing, tests, and security checks
+
+## Security Workflow
+
+Mandatory stage gate:
+
+```bash
+sudo ./scripts/security_scan.sh
+python3 -m pip_audit
+python3 -m bandit -r scripts
+```
+
+If vulnerabilities are found:
+
+```bash
+sudo ./scripts/remediate_python_vulns.sh
+python3 -m pip_audit
+```
+
+## Stage 1 Validation Checklist
+
+1. `sudo ./scripts/setup_minio.sh`
+2. `sudo ./scripts/healthcheck.sh`
+3. `sudo ./scripts/install_systemd_service.sh`
+4. Reboot host and verify `nomad-lakehouse.service` auto-start
+5. `sudo ./scripts/setup_python_env.sh`
+6. Run all three pipeline scripts
+7. Verify outputs in `data/output/`
+8. Run security workflow and log findings
+9. Record evidence in `docs/week1-closure.md`
+
+## Next Steps
+
+- Expand Iceberg table write path from starter CSV validation flow
+- Add incremental ingestion and stronger data quality contracts
+- Add richer observability and operational diagnostics
+- Improve onboarding path toward near plug-and-play deployment
+
+## Documentation Policy
+
+Every behavioral, operational, or workflow change must include matching documentation updates in the same pull request.
+
+## Repository Layout
+
+```text
+.
+├── .github/workflows/ci.yml
+├── docker-compose.yml
+├── pyproject.toml
+├── scripts/
+│   ├── setup_minio.sh
+│   ├── install_systemd_service.sh
+│   ├── setup_python_env.sh
+│   ├── healthcheck.sh
+│   ├── security_scan.sh
+│   ├── remediate_python_vulns.sh
+│   ├── hardening_checklist.sh
+│   ├── backup_metadata.sh
+│   ├── restore_metadata.sh
+│   ├── create_bronze_tables.py
+│   ├── bronze_to_silver.py
+│   └── silver_to_gold.py
+├── docs/
+│   ├── setup.md
+│   ├── ubuntu-deploy.md
+│   ├── architecture.md
+│   └── examples.md
+│   └── week1-closure.md
+├── data/sample/orders.csv
+└── tests/
+```
+
+## Documentation Index
+
+- Setup guide: `docs/setup.md`
+- Deployment runbook: `docs/ubuntu-deploy.md`
+- Architecture summary: `docs/architecture.md`
+- Pipeline and query examples: `docs/examples.md`
+- Week 1 closure evidence: `docs/week1-closure.md`
+- Implementation roadmap: `PROJECT_PLAN.md`
+
+## License
+
+See `LICENSE`.
