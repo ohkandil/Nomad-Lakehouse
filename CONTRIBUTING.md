@@ -20,6 +20,8 @@ source .venv/bin/activate
 
 ## Pull Request Checklist
 
+Policy: every implementation change must include matching CI/CD test coverage updates. If behavior changes, add or adjust at least one automated CI validation step (unit, integration, or smoke test).
+
 Run these before opening a PR:
 
 ```bash
@@ -35,6 +37,7 @@ For operational workflow changes, include updates to:
 - `docs/setup.md`
 - `docs/ubuntu-deploy.md`
 - `docs/week1-closure.md` (when Week 1 closure evidence is affected)
+- `docs/week2-closure.md` (when Bronze and catalog behavior changes)
 
 If `pip-audit` reports issues:
 

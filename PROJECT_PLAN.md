@@ -128,6 +128,15 @@ Week 2 tasks:
 - Add minimal dataset and ingestion contract
 - Validate metadata and files in object storage
 
+Week 2 status (implementation log):
+
+- [x] `create_bronze_tables.py` validates CSV schema and constraints
+- [x] `create_bronze_tables.py` validates JDBC backend reachability from `CATALOG_JDBC_URI`
+- [x] Bronze ingestion contract generated at `data/contracts/bronze_orders_contract.json`
+- [x] Bronze table materialized as queryable `bronze.orders` in `data/output/lakehouse.duckdb`
+- [x] Script rerunnable with `CREATE OR REPLACE` semantics (no manual cleanup required)
+- [x] Evidence checklist created in `docs/week2-closure.md`
+
 Week 2 exit criteria:
 
 - Bronze table created and queryable

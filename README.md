@@ -32,20 +32,29 @@ cd nomad-lakehouse
 cp .env.example .env
 chmod +x scripts/*.sh
 sudo ./scripts/setup_minio.sh
-sudo ./scripts/setup_python_env.sh
+INSTALL_PROFILE=lakehouse sudo ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
-## Current Implementation (Stage 1)
+## Current Implementation (Week 2 In Progress)
 
 - Linux-first deployment baseline
 - MinIO + PostgreSQL services with health checks
 - Bucket bootstrap (`minio-init`) and environment bootstrap scripts
+- Bronze ingestion contract generation (`data/contracts/bronze_orders_contract.json`)
+- Bronze table materialization in DuckDB (`bronze.orders`) with rerunnable `CREATE OR REPLACE` semantics
 - Bronze -> Silver -> Gold starter pipeline
 - CI with lint, typing, tests, and security checks
+
+## Week 2 Highlights
+
+- Catalog backend connectivity validation: `create_bronze_tables.py` validates JDBC target reachability from `CATALOG_JDBC_URI`
+- Repeatable Bronze setup: reruns update the same `bronze.orders` table without manual cleanup
+- Contract-first ingestion: schema/constraints exported as a versioned JSON contract
+- Recruiter-friendly evidence path: closure checklist and explicit verification commands
 
 ## Security Workflow
 
@@ -76,9 +85,28 @@ python3 -m pip_audit
 8. Run security workflow and log findings
 9. Record evidence in `docs/week1-closure.md`
 
+## Week 2 Validation Checklist
+
+1. Ensure services are running: `sudo ./scripts/setup_minio.sh`
+2. Activate environment: `source .venv/bin/activate`
+3. Run Bronze workflow: `python3 scripts/create_bronze_tables.py`
+4. Verify generated contract: `cat data/contracts/bronze_orders_contract.json`
+5. Verify Bronze table is queryable:
+
+```bash
+python3 - <<'PY'
+import duckdb
+con = duckdb.connect("data/output/lakehouse.duckdb")
+print(con.execute("SELECT COUNT(*) AS rows FROM bronze.orders").fetchall())
+print(con.execute("SELECT * FROM bronze.orders ORDER BY order_id LIMIT 5").fetchdf())
+PY
+```
+
+6. Record evidence in `docs/week2-closure.md`
+
 ## Next Steps
 
-- Expand Iceberg table write path from starter CSV validation flow
+- Expand from Bronze contract and DuckDB table materialization to full Iceberg table commit flow
 - Add incremental ingestion and stronger data quality contracts
 - Add richer observability and operational diagnostics
 - Improve onboarding path toward near plug-and-play deployment
@@ -124,7 +152,17 @@ Every behavioral, operational, or workflow change must include matching document
 - Architecture summary: `docs/architecture.md`
 - Pipeline and query examples: `docs/examples.md`
 - Week 1 closure evidence: `docs/week1-closure.md`
+- Week 2 closure evidence: `docs/week2-closure.md`
 - Implementation roadmap: `PROJECT_PLAN.md`
+
+## Portfolio Notes (Junior Data Engineer)
+
+This repository is structured so a junior engineer can clearly present project ownership:
+
+- Problem framing: local-first lakehouse that mirrors production patterns without cloud spend
+- Technical depth: medallion architecture, contract-based ingestion, JDBC-backed catalog checks
+- Engineering maturity: CI, type checks, security scanning, and documentation discipline
+- Communication quality: setup guides, architecture notes, examples, and closure evidence artifacts
 
 ## License
 

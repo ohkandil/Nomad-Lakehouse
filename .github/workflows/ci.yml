@@ -7,6 +7,20 @@ on:
 jobs:
   quality-and-security:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: iceberg
+          POSTGRES_USER: iceberg
+          POSTGRES_PASSWORD: iceberg
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iceberg -d iceberg"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,7 +33,11 @@ jobs:
       - name: Install project and dev tools
         run: |
           python3 -m pip install --upgrade pip
-          pip install -e .[dev]
+          pip install -e .[dev,lakehouse]
+
+      - name: Prepare output directories
+        run: |
+          mkdir -p data/contracts data/output
 
       - name: Ruff
         run: ruff check .
@@ -31,6 +49,21 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: python3 -m pytest
+
+      - name: Week 2 Bronze smoke test
+        env:
+          CATALOG_JDBC_URI: jdbc:postgresql://localhost:5432/iceberg
+        run: |
+          python3 scripts/create_bronze_tables.py
+          test -f data/contracts/bronze_orders_contract.json
+          python3 - <<'PY'
+          import duckdb
+          con = duckdb.connect("data/output/lakehouse.duckdb")
+          count = con.execute("SELECT COUNT(*) FROM bronze.orders").fetchone()[0]
+          if count <= 0:
+              raise SystemExit("bronze.orders is empty")
+          print(f"bronze.orders row count: {count}")
+          PY
 
       - name: pip-audit (CVE)
         run: pip-audit

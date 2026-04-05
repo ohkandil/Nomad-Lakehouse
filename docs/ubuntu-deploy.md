@@ -80,4 +80,19 @@ sudo ./scripts/security_scan.sh
 ```
 
 Record results in README stage notes.
-Also capture evidence in `docs/week1-closure.md`.
+Capture evidence in:
+
+- `docs/week1-closure.md` for foundation/runtime checks
+- `docs/week2-closure.md` for Bronze contract and queryability checks
+
+## Week 2 Operational Validation
+
+```bash
+source .venv/bin/activate
+python3 scripts/create_bronze_tables.py
+python3 - <<'PY'
+import duckdb
+con = duckdb.connect("data/output/lakehouse.duckdb")
+print(con.execute("SELECT COUNT(*) FROM bronze.orders").fetchall())
+PY
+```

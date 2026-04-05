@@ -46,12 +46,33 @@ docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${
 ## Run Starter Pipeline
 
 ```bash
-sudo ./scripts/setup_python_env.sh
+INSTALL_PROFILE=lakehouse sudo ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
+
+## Week 2 Bronze Verification
+
+Validate that the Bronze workflow produced both contract and table artifacts:
+
+```bash
+cat data/contracts/bronze_orders_contract.json
+
+python3 - <<'PY'
+import duckdb
+con = duckdb.connect("data/output/lakehouse.duckdb")
+print(con.execute("SELECT COUNT(*) AS rows FROM bronze.orders").fetchall())
+print(con.execute("DESCRIBE bronze.orders").fetchdf())
+PY
+```
+
+Expected behavior:
+
+- `create_bronze_tables.py` validates source contract constraints
+- JDBC catalog target from `CATALOG_JDBC_URI` is checked for connectivity
+- `bronze.orders` is rebuilt idempotently on each run (`CREATE OR REPLACE`)
 
 ## Security Gate
 
@@ -73,3 +94,9 @@ python3 -m pip_audit
 - MinIO API: `9000`
 - MinIO Console: `9001`
 - PostgreSQL: `5432`
+
+## Release-Readiness Notes
+
+- Keep `.env.example` values generic and never commit real credentials
+- Keep setup steps deterministic and copy-paste runnable
+- For every behavior change, update `README.md`, `docs/examples.md`, and closure checklist docs in the same PR
