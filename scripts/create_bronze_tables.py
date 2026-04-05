@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib
 import json
 import os
 import re
@@ -114,7 +115,7 @@ def write_ingestion_contract(path: Path) -> None:
 
 def materialize_bronze_table(orders: list[BronzeOrder], database_path: Path) -> int:
     try:
-        import duckdb  # type: ignore[import-not-found]
+        duckdb = importlib.import_module("duckdb")
     except ImportError as exc:
         raise RuntimeError(
             "DuckDB is required for Bronze table materialization. Install with: "
