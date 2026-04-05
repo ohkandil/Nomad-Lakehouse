@@ -32,7 +32,7 @@ cd nomad-lakehouse
 cp .env.example .env
 chmod +x scripts/*.sh
 sudo ./scripts/setup_minio.sh
-INSTALL_PROFILE=lakehouse sudo ./scripts/setup_python_env.sh
+INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
@@ -69,7 +69,7 @@ python3 -m bandit -r scripts
 If vulnerabilities are found:
 
 ```bash
-sudo ./scripts/remediate_python_vulns.sh
+./scripts/remediate_python_vulns.sh
 python3 -m pip_audit
 ```
 
@@ -79,7 +79,7 @@ python3 -m pip_audit
 2. `sudo ./scripts/healthcheck.sh`
 3. `sudo ./scripts/install_systemd_service.sh`
 4. Reboot host and verify `nomad-lakehouse.service` auto-start
-5. `sudo ./scripts/setup_python_env.sh`
+5. `./scripts/setup_python_env.sh`
 6. Run all three pipeline scripts
 7. Verify outputs in `data/output/`
 8. Run security workflow and log findings

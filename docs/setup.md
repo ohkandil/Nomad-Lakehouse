@@ -46,7 +46,7 @@ docker compose exec -T postgres pg_isready -U "${POSTGRES_USER:-iceberg}" -d "${
 ## Run Starter Pipeline
 
 ```bash
-INSTALL_PROFILE=lakehouse sudo ./scripts/setup_python_env.sh
+INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
@@ -85,7 +85,7 @@ python3 -m bandit -r scripts
 If vulnerabilities are reported:
 
 ```bash
-sudo ./scripts/remediate_python_vulns.sh
+./scripts/remediate_python_vulns.sh
 python3 -m pip_audit
 ```
 

@@ -3,7 +3,7 @@
 ## 1. Run Starter Pipeline
 
 ```bash
-INSTALL_PROFILE=lakehouse sudo ./scripts/setup_python_env.sh
+INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py

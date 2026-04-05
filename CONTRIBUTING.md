@@ -14,7 +14,7 @@ Thanks for contributing to Nomad Lakehouse.
 
 ```bash
 chmod +x scripts/*.sh
-sudo ./scripts/setup_python_env.sh
+./scripts/setup_python_env.sh
 source .venv/bin/activate
 ```
 
@@ -42,7 +42,7 @@ For operational workflow changes, include updates to:
 If `pip-audit` reports issues:
 
 ```bash
-sudo ./scripts/remediate_python_vulns.sh
+./scripts/remediate_python_vulns.sh
 python3 -m pip_audit
 ```
 

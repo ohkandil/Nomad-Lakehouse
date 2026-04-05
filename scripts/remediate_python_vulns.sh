@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-  exec sudo -E bash "$0" "$@"
+if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+  echo "[remediate] Do not run this script as root/sudo."
+  echo "[remediate] Run as your normal user so pip can update project files safely."
+  exit 1
 fi
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

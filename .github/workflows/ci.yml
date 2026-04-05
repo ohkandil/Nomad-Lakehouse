@@ -35,6 +35,13 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install -e .[dev,lakehouse]
 
+      - name: Python setup script regression check
+        run: |
+          rm -rf .venv nomad_lakehouse.egg-info
+          chmod +x scripts/setup_python_env.sh
+          INSTALL_PROFILE=dev ./scripts/setup_python_env.sh
+          test -f .venv/bin/activate
+
       - name: Prepare output directories
         run: |
           mkdir -p data/contracts data/output
