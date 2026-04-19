@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+  <h2>Pipeline Health</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Layer</th>
+          <th>Status</th>
+          <th>Row Count</th>
+          <th>Last Updated</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody id="pipeline-rows"></tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

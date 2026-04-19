@@ -22,6 +22,7 @@ It is intentionally:
 - Apache Iceberg workflow path: modern table-format direction for ACID/versioned data patterns
 - Python 3: portable pipeline and validation scripts
 - DuckDB: fast local query engine for analytics and verification
+- FastAPI dashboard: interactive operational UI for health and pipeline monitoring
 - Docker Compose: reproducible service orchestration on a single machine
 
 ## Quick Start (Ubuntu 24.04)
@@ -38,6 +39,22 @@ python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
+
+## Admin Dashboard
+
+Run:
+
+```bash
+source .venv/bin/activate
+python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
+```
+
+Open:
+
+- http://127.0.0.1:8088/
+- http://127.0.0.1:8088/pipeline
+- http://127.0.0.1:8088/quality
+- http://127.0.0.1:8088/security
 
 ## Current Implementation (Week 2 Partially Validated)
 
@@ -151,6 +168,8 @@ Every behavioral, operational, or workflow change must include matching document
 - Deployment runbook: `docs/ubuntu-deploy.md`
 - Architecture summary: `docs/architecture.md`
 - Pipeline and query examples: `docs/examples.md`
+- Admin dashboard implementation plan: `docs/admin-dashboard-plan.md`
+- Admin dashboard documentation: `docs/admin-dashboard.md`
 - Week 1 closure evidence: `docs/week1-closure.md`
 - Week 2 closure evidence: `docs/week2-closure.md`
 - Implementation roadmap: `PROJECT_PLAN.md`

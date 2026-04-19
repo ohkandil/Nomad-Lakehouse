@@ -47,3 +47,13 @@ sudo ./scripts/security_scan.sh
 python3 -m pip_audit
 python3 -m bandit -r scripts
 ```
+
+## 7. Dashboard API Examples
+
+```bash
+python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
+curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -fsS http://127.0.0.1:8088/api/status/pipeline
+curl -fsS http://127.0.0.1:8088/api/status/quality
+curl -fsS http://127.0.0.1:8088/api/status/security
+```

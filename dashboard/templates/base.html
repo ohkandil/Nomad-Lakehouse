@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nomad Admin Dashboard - {{ title }}</title>
+    <link rel="stylesheet" href="/static/dashboard.css" />
+  </head>
+  <body data-endpoint="{{ api_endpoint }}">
+    <header class="hero">
+      <div class="hero-glow"></div>
+      <h1>Nomad Lakehouse Admin</h1>
+      <p>Operational health and medallion pipeline visibility</p>
+    </header>
+
+    <nav class="nav-tabs">
+      <a href="/" class="tab {% if request.url.path == '/' %}active{% endif %}">Overview</a>
+      <a href="/pipeline" class="tab {% if request.url.path == '/pipeline' %}active{% endif %}">Pipeline</a>
+      <a href="/quality" class="tab {% if request.url.path == '/quality' %}active{% endif %}">Quality</a>
+      <a href="/security" class="tab {% if request.url.path == '/security' %}active{% endif %}">Security</a>
+    </nav>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+      <span id="last-updated">Last updated: -</span>
+      <button id="refresh-btn" type="button">Refresh now</button>
+    </footer>
+
+    <script src="/static/dashboard.js"></script>
+  </body>
+</html>

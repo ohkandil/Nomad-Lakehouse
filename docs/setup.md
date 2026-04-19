@@ -53,6 +53,20 @@ python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
+## Run Admin Dashboard
+
+```bash
+source .venv/bin/activate
+python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
+```
+
+Verify dashboard API:
+
+```bash
+curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -fsS http://127.0.0.1:8088/api/status/pipeline
+```
+
 ## Week 2 Bronze Verification
 
 Validate that the Bronze workflow produced both contract and table artifacts:
