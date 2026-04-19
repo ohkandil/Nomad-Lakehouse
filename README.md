@@ -39,7 +39,7 @@ python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
-## Current Implementation (Week 2 In Progress)
+## Current Implementation (Week 2 Partially Validated)
 
 - Linux-first deployment baseline
 - MinIO + PostgreSQL services with health checks
@@ -76,22 +76,22 @@ python3 -m pip_audit
 ## Stage 1 Validation Checklist
 
 1. `sudo ./scripts/setup_minio.sh`
-2. `sudo ./scripts/healthcheck.sh`
-3. `sudo ./scripts/install_systemd_service.sh`
-4. Reboot host and verify `nomad-lakehouse.service` auto-start
-5. `./scripts/setup_python_env.sh`
-6. Run all three pipeline scripts
-7. Verify outputs in `data/output/`
-8. Run security workflow and log findings
-9. Record evidence in `docs/week1-closure.md`
+1. `sudo ./scripts/healthcheck.sh`
+1. `sudo ./scripts/install_systemd_service.sh`
+1. Reboot host and verify `nomad-lakehouse.service` auto-start
+1. `./scripts/setup_python_env.sh`
+1. Run all three pipeline scripts
+1. Verify outputs in `data/output/`
+1. Run security workflow and log findings
+1. Record evidence in `docs/week1-closure.md`
 
 ## Week 2 Validation Checklist
 
 1. Ensure services are running: `sudo ./scripts/setup_minio.sh`
-2. Activate environment: `source .venv/bin/activate`
-3. Run Bronze workflow: `python3 scripts/create_bronze_tables.py`
-4. Verify generated contract: `cat data/contracts/bronze_orders_contract.json`
-5. Verify Bronze table is queryable:
+1. Activate environment: `source .venv/bin/activate`
+1. Run Bronze workflow: `python3 scripts/create_bronze_tables.py`
+1. Verify generated contract: `cat data/contracts/bronze_orders_contract.json`
+1. Verify Bronze table is queryable:
 
 ```bash
 python3 - <<'PY'
@@ -102,7 +102,7 @@ print(con.execute("SELECT * FROM bronze.orders ORDER BY order_id LIMIT 5").fetch
 PY
 ```
 
-6. Record evidence in `docs/week2-closure.md`
+1. Record evidence in `docs/week2-closure.md`
 
 ## Next Steps
 
