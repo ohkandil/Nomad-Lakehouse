@@ -56,7 +56,7 @@ Open:
 - http://127.0.0.1:8088/quality
 - http://127.0.0.1:8088/security
 
-## Current Implementation (Week 2 Partially Validated)
+## Current Implementation
 
 - Linux-first deployment baseline
 - MinIO + PostgreSQL services with health checks
@@ -72,6 +72,8 @@ Open:
 - Repeatable Bronze setup: reruns update the same `bronze.orders` table without manual cleanup
 - Contract-first ingestion: schema/constraints exported as a versioned JSON contract
 - Recruiter-friendly evidence path: closure checklist and explicit verification commands
+
+Current verification evidence may vary by host environment. Treat `docs/week2-closure.md` as the source of truth for your latest local validation run.
 
 ## Security Workflow
 
@@ -139,6 +141,13 @@ Every behavioral, operational, or workflow change must include matching document
 ├── .github/workflows/ci.yml
 ├── docker-compose.yml
 ├── pyproject.toml
+├── dashboard/
+│   ├── app.py
+│   ├── health_sources.py
+│   ├── pipeline_sources.py
+│   ├── security_sources.py
+│   ├── static/
+│   └── templates/
 ├── scripts/
 │   ├── setup_minio.sh
 │   ├── install_systemd_service.sh
@@ -156,8 +165,11 @@ Every behavioral, operational, or workflow change must include matching document
 │   ├── setup.md
 │   ├── ubuntu-deploy.md
 │   ├── architecture.md
-│   └── examples.md
-│   └── week1-closure.md
+│   ├── examples.md
+│   ├── admin-dashboard-plan.md
+│   ├── admin-dashboard.md
+│   ├── week1-closure.md
+│   └── week2-closure.md
 ├── data/sample/orders.csv
 └── tests/
 ```

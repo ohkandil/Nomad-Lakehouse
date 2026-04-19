@@ -1,5 +1,9 @@
 # **Local Data Lakehouse MVP**
 
+> Historical note: this document captures the original MVP proposal and aspirational scope.
+> For current implementation status and validated workflows, refer to `README.md`,
+> `PROJECT_PLAN.md`, and closure checklists under `docs/`.
+
 ## Build a Production-Grade Lakehouse on MinIO & Apache Iceberg
 
 Entry-Level Portfolio Project | No Cloud Costs Required

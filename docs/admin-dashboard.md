@@ -6,6 +6,8 @@ The admin dashboard provides a single operational view for Nomad Lakehouse healt
 
 It is intended for local operators running the stack on Ubuntu or homelab infrastructure.
 
+Current status: implemented and available in this repository under `dashboard/`.
+
 ## Functional Requirements
 
 The dashboard should expose these operator views:
@@ -22,7 +24,7 @@ The dashboard should expose these operator views:
 1. Fast load time on low-resource machines.
 1. Clear degraded-state messaging when dependencies are unavailable.
 
-## Planned Runtime Architecture
+## Runtime Architecture
 
 1. FastAPI app serves HTML and JSON status endpoints.
 1. Source adapters collect status from local files and service checks.
@@ -34,7 +36,14 @@ Suggested runtime command:
 uvicorn dashboard.app:app --host ${DASHBOARD_HOST:-127.0.0.1} --port ${DASHBOARD_PORT:-8088}
 ```
 
-## Planned Endpoint Reference
+Implemented routes:
+
+1. `dashboard/app.py`
+1. `dashboard/health_sources.py`
+1. `dashboard/pipeline_sources.py`
+1. `dashboard/security_sources.py`
+
+## Endpoint Reference
 
 1. `GET /`:
    Overview dashboard page.
@@ -71,7 +80,7 @@ Core checks:
 1. Silver and Gold outputs exist and are readable.
 1. Freshness window for latest pipeline outputs is acceptable.
 
-## Planned Configuration
+## Configuration
 
 Environment variables:
 
@@ -80,6 +89,11 @@ Environment variables:
 1. `DASHBOARD_DATA_DIR` default `data/output`
 1. `DASHBOARD_CONTRACT_DIR` default `data/contracts`
 1. `DASHBOARD_REFRESH_SECONDS` default `15`
+
+Notes on current implementation:
+
+1. Host and port are controlled at runtime via `uvicorn` arguments.
+1. Service checks currently use `MINIO_API_PORT` and `CATALOG_JDBC_URI`.
 
 ## Security Notes
 
@@ -90,7 +104,7 @@ Environment variables:
 
 ## Operations Runbook
 
-Start dashboard (planned):
+Start dashboard:
 
 ```bash
 source .venv/bin/activate

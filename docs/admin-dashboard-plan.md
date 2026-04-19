@@ -1,5 +1,11 @@
 # Admin Dashboard Implementation Plan
 
+Status update (2026-04):
+
+1. Baseline dashboard is implemented under `dashboard/`.
+1. HTML routes and status APIs are available and covered by tests.
+1. This document now acts as a roadmap for incremental improvements.
+
 ## Objective
 
 Build a local-first admin dashboard that gives operators one place to monitor Nomad Lakehouse health, data pipeline freshness, and key service signals.
@@ -19,6 +25,12 @@ In scope for first release:
 1. Data freshness indicators and row-count trend snapshots.
 1. Security scan status summary from latest local scan reports.
 1. Read-only dashboard access on LAN.
+
+Implemented in current baseline:
+
+1. Service health overview APIs and pages.
+1. Pipeline, quality, and security status APIs and pages.
+1. Basic tests in `tests/test_dashboard_sources.py`.
 
 Out of scope for first release:
 
@@ -98,9 +110,9 @@ Contract requirements:
 1. Every health item includes `status` in `ok|warn|fail|unknown`.
 1. Every warning/failure includes a short remediation hint.
 
-## Milestone Plan
+## Milestone Plan (Roadmap)
 
-Phase 1: Foundation (1-2 days)
+Phase 1: Foundation (completed)
 
 1. Scaffold dashboard package and FastAPI app entrypoint.
 1. Add overview route and basic HTML template.
@@ -111,7 +123,7 @@ Exit criteria:
 1. Overview page loads locally.
 1. Service status indicators render correctly for up/down cases.
 
-Phase 2: Pipeline Observability (1-2 days)
+Phase 2: Pipeline Observability (completed)
 
 1. Add Bronze/Silver/Gold artifact readers.
 1. Add row count and freshness cards.
@@ -122,7 +134,7 @@ Exit criteria:
 1. Dashboard detects missing contract/output files.
 1. Pipeline freshness and row counts display correctly.
 
-Phase 3: Data Quality and Security (1-2 days)
+Phase 3: Data Quality and Security (completed baseline)
 
 1. Add Silver/Gold quality checks and threshold warnings.
 1. Parse latest security scan artifacts.
@@ -133,7 +145,7 @@ Exit criteria:
 1. Quality warnings surface clearly.
 1. Security summary displays latest scan result.
 
-Phase 4: Hardening and Docs (1 day)
+Phase 4: Hardening and Docs (in progress / next)
 
 1. Add tests for all status adapters.
 1. Add run script and setup docs.
