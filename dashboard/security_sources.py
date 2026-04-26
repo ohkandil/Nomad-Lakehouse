@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Literal
 
 from dashboard.models import SecurityStatus
 
@@ -59,7 +60,7 @@ def collect_security_status() -> SecurityStatus:
         elif severity == "critical":
             critical_count += 1
 
-    status = "ok"
+    status: Literal["ok", "warn", "fail", "unknown"] = "ok"
     if critical_count > 0:
         status = "fail"
     elif high_count > 0:

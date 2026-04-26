@@ -100,7 +100,39 @@ Notes on current implementation:
 1. Keep dashboard LAN-only for MVP.
 1. Avoid exposing secrets in rendered pages or logs.
 1. Redact connection strings and credentials from all payloads.
-1. If remote exposure is needed later, place behind reverse proxy with auth.
+1. Dashboard network exposure should be through reverse proxy with auth + TLS only.
+
+## Secure Reverse Proxy Deployment
+
+Recommended local-network pattern:
+
+1. Dashboard app listens on `127.0.0.1:8088` only.
+1. `nomad-dashboard.service` manages uvicorn uptime.
+1. Caddy handles HTTPS (`tls internal`), Basic Auth, and proxying to loopback upstream.
+1. Caddy route is limited to configured private CIDRs by default.
+
+Install sequence:
+
+```bash
+sudo ./scripts/install_dashboard_service.sh
+sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
+   DASHBOARD_AUTH_USER=admin \
+   DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
+   ./scripts/install_dashboard_reverse_proxy.sh
+```
+
+Verification:
+
+```bash
+curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
+```
+
+Operational notes:
+
+1. Import Caddy local CA cert to client trust stores for warning-free HTTPS.
+1. Rotate dashboard credentials regularly.
+1. Keep direct Uvicorn port blocked from LAN firewall rules.
 
 ## Operations Runbook
 
@@ -111,10 +143,18 @@ source .venv/bin/activate
 uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 ```
 
+Or run as a managed service:
+
+```bash
+sudo ./scripts/install_dashboard_service.sh
+systemctl status --no-pager nomad-dashboard.service
+```
+
 Verify:
 
 ```bash
 curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -k -u <user>:<password> https://<dashboard-domain>/api/status/overview
 ```
 
 Stop:

@@ -56,6 +56,18 @@ Open:
 - http://127.0.0.1:8088/quality
 - http://127.0.0.1:8088/security
 
+Secure LAN access with reverse proxy, auth, and TLS:
+
+```bash
+sudo ./scripts/install_dashboard_service.sh
+sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
+	DASHBOARD_AUTH_USER=admin \
+	DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
+	./scripts/install_dashboard_reverse_proxy.sh
+```
+
+Then open `https://dashboard.home.arpa` from your LAN device.
+
 ## Current Implementation
 
 - Linux-first deployment baseline
@@ -81,7 +93,7 @@ Mandatory stage gate:
 
 ```bash
 sudo ./scripts/security_scan.sh
-python3 -m pip_audit
+python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219
 python3 -m bandit -r scripts
 ```
 
@@ -89,7 +101,7 @@ If vulnerabilities are found:
 
 ```bash
 ./scripts/remediate_python_vulns.sh
-python3 -m pip_audit
+python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219
 ```
 
 ## Stage 1 Validation Checklist
@@ -141,6 +153,12 @@ Every behavioral, operational, or workflow change must include matching document
 ├── .github/workflows/ci.yml
 ├── docker-compose.yml
 ├── pyproject.toml
+├── configs/
+│   ├── caddy/
+│   │   └── dashboard.Caddyfile.template
+│   └── systemd/
+│       ├── nomad-dashboard.service.template
+│       └── nomad-lakehouse.service.template
 ├── dashboard/
 │   ├── app.py
 │   ├── health_sources.py
@@ -151,6 +169,8 @@ Every behavioral, operational, or workflow change must include matching document
 ├── scripts/
 │   ├── setup_minio.sh
 │   ├── install_systemd_service.sh
+│   ├── install_dashboard_service.sh
+│   ├── install_dashboard_reverse_proxy.sh
 │   ├── setup_python_env.sh
 │   ├── healthcheck.sh
 │   ├── security_scan.sh

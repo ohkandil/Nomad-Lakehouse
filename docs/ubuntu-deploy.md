@@ -41,6 +41,45 @@ docker compose ps
 sudo ./scripts/healthcheck.sh
 ```
 
+## Dashboard Service (systemd)
+
+Install and enable dashboard service:
+
+```bash
+sudo ./scripts/install_dashboard_service.sh
+systemctl is-enabled nomad-dashboard.service
+```
+
+Validate dashboard upstream:
+
+```bash
+curl -fsS http://127.0.0.1:8088/api/status/overview
+```
+
+## Reverse Proxy with Auth + SSL (Caddy)
+
+Install and configure Caddy reverse proxy:
+
+```bash
+sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
+	DASHBOARD_AUTH_USER=admin \
+	DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
+	./scripts/install_dashboard_reverse_proxy.sh
+```
+
+Validate HTTPS route from host:
+
+```bash
+curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
+systemctl status --no-pager caddy
+```
+
+LAN client notes:
+
+- Use a DNS/hosts entry for your chosen dashboard domain.
+- Trust Caddy local CA on each client device to remove browser warnings.
+- Keep upstream on loopback only (`127.0.0.1:8088`).
+
 ## Diagnostics (journalctl + container logs)
 
 ```bash
@@ -70,6 +109,7 @@ sudo ./scripts/restore_metadata.sh ./backups/<file>.sql
 - fail2ban enabled
 - unattended upgrades enabled
 - Rotate default credentials before first shared use
+- Restrict dashboard access to trusted LAN CIDRs via reverse proxy matcher
 
 ## Stage Security Procedure
 

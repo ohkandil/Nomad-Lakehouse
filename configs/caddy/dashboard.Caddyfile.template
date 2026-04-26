@@ -1,0 +1,29 @@
+{
+  admin off
+}
+
+{{DASHBOARD_DOMAIN}} {
+  encode gzip zstd
+
+  tls internal
+
+  @allowed remote_ip {{DASHBOARD_ALLOWED_CIDRS}}
+  handle @allowed {
+    basicauth {
+      {{DASHBOARD_AUTH_USER}} {{DASHBOARD_AUTH_HASH}}
+    }
+
+    reverse_proxy {{DASHBOARD_UPSTREAM}}
+
+    header {
+      Strict-Transport-Security "max-age=31536000; includeSubDomains"
+      X-Content-Type-Options "nosniff"
+      X-Frame-Options "DENY"
+      Referrer-Policy "strict-origin-when-cross-origin"
+    }
+  }
+
+  handle {
+    respond "Forbidden" 403
+  }
+}

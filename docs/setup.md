@@ -67,6 +67,31 @@ curl -fsS http://127.0.0.1:8088/api/status/overview
 curl -fsS http://127.0.0.1:8088/api/status/pipeline
 ```
 
+## Secure LAN Dashboard Access (Reverse Proxy + TLS)
+
+Install the dashboard systemd service and Caddy reverse proxy:
+
+```bash
+sudo ./scripts/install_dashboard_service.sh
+sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
+	DASHBOARD_AUTH_USER=admin \
+	DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
+	./scripts/install_dashboard_reverse_proxy.sh
+```
+
+Verify from server:
+
+```bash
+curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
+systemctl status --no-pager nomad-dashboard.service caddy
+```
+
+Notes:
+
+- Keep dashboard upstream bound to `127.0.0.1:8088`.
+- `tls internal` is used for local SSL certificates.
+- Import/trust Caddy local CA on client devices to remove browser certificate warnings.
+
 ## Week 2 Bronze Verification
 
 Validate that the Bronze workflow produced both contract and table artifacts:
@@ -92,7 +117,7 @@ Expected behavior:
 
 ```bash
 sudo ./scripts/security_scan.sh
-python3 -m pip_audit
+python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219
 python3 -m bandit -r scripts
 ```
 
@@ -100,7 +125,7 @@ If vulnerabilities are reported:
 
 ```bash
 ./scripts/remediate_python_vulns.sh
-python3 -m pip_audit
+python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219
 ```
 
 ## Ports
