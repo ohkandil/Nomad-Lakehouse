@@ -21,6 +21,7 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 @app.get("/", response_class=HTMLResponse)
 def overview_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
+        request,
         "overview.html",
         {
             "request": request,
@@ -33,6 +34,7 @@ def overview_page(request: Request) -> HTMLResponse:
 @app.get("/pipeline", response_class=HTMLResponse)
 def pipeline_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
+        request,
         "pipeline.html",
         {
             "request": request,
@@ -45,6 +47,7 @@ def pipeline_page(request: Request) -> HTMLResponse:
 @app.get("/quality", response_class=HTMLResponse)
 def quality_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
+        request,
         "quality.html",
         {
             "request": request,
@@ -57,6 +60,7 @@ def quality_page(request: Request) -> HTMLResponse:
 @app.get("/security", response_class=HTMLResponse)
 def security_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
+        request,
         "security.html",
         {
             "request": request,

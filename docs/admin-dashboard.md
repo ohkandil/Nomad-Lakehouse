@@ -29,7 +29,7 @@ The dashboard should expose these operator views:
 1. FastAPI app serves HTML and JSON status endpoints.
 1. Source adapters collect status from local files and service checks.
 1. UI reads API payloads and renders cards/tables/charts.
-
+ 
 Suggested runtime command:
 
 ```bash
