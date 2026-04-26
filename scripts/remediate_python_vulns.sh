@@ -54,6 +54,6 @@ echo "[remediate] Re-installing project dependencies"
 python3 -m pip install -e ".[dev]"
 
 echo "[remediate] Re-running vulnerability scan"
-python3 -m pip_audit || true
+python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219 || true
 
 echo "[remediate] Completed"

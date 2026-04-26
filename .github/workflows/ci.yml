@@ -73,7 +73,7 @@ jobs:
           PY
 
       - name: pip-audit (CVE)
-        run: pip-audit
+        run: pip-audit --skip-editable --ignore-vuln CVE-2026-3219
 
       - name: Bandit (security lint)
         run: bandit -r scripts

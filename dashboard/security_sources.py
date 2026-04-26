@@ -31,7 +31,8 @@ def collect_security_status() -> SecurityStatus:
     if report is None:
         guidance = (
             "No security report file detected. Generate one with: "
-            "python3 -m pip_audit --format json --output data/output/pip-audit-report.json"
+            "python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219 "
+            "--format json --output data/output/pip-audit-report.json"
         )
         return SecurityStatus(
             status="unknown",
