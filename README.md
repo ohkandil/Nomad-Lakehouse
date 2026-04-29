@@ -31,6 +31,7 @@ It is intentionally:
 git clone https://github.com/ohkandil/nomad-lakehouse nomad-lakehouse
 cd nomad-lakehouse
 cp .env.example .env
+python3 scripts/configure_setup_tui.py
 chmod +x scripts/*.sh
 sudo ./scripts/setup_minio.sh
 INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh

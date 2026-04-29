@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from dashboard.app import app
@@ -57,7 +58,7 @@ def test_security_api_responds() -> None:
     assert "status" in payload
 
 
-def test_security_report_parsing(tmp_path: Path, monkeypatch) -> None:
+def test_security_report_parsing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     report_path = tmp_path / "pip-audit-report.json"
     payload = {
         "vulnerabilities": [

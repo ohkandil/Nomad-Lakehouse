@@ -13,10 +13,13 @@
 git clone <repo-url> nomad-lakehouse
 cd nomad-lakehouse
 cp .env.example .env
+python3 scripts/configure_setup_tui.py
 chmod +x scripts/*.sh
 ```
 
-Edit `.env` and rotate at least:
+The setup TUI writes `.env`, auto-generates `CATALOG_JDBC_URI` from the selected PostgreSQL database and port,
+and includes dashboard reverse-proxy defaults (`DASHBOARD_*`).
+You can still edit `.env` manually and rotate at least:
 
 - `MINIO_ROOT_PASSWORD`
 - `POSTGRES_PASSWORD`
