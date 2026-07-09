@@ -1,5 +1,7 @@
 # Nomad Lakehouse
 
+![Nomad Lakehouse Logo](docs/assets/nomad-lakehouse-logo.png)
+
 Lightweight, local-first data lakehouse for Ubuntu servers and homelabs.
 
 Nomad focuses on practical Bronze/Silver/Gold workflows using open-source components, with minimal infrastructure overhead and strong security defaults.
@@ -52,19 +54,19 @@ python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 
 Open:
 
-- http://127.0.0.1:8088/
-- http://127.0.0.1:8088/pipeline
-- http://127.0.0.1:8088/quality
-- http://127.0.0.1:8088/security
+- [http://127.0.0.1:8088/](http://127.0.0.1:8088/)
+- [http://127.0.0.1:8088/pipeline](http://127.0.0.1:8088/pipeline)
+- [http://127.0.0.1:8088/quality](http://127.0.0.1:8088/quality)
+- [http://127.0.0.1:8088/security](http://127.0.0.1:8088/security)
 
 Secure LAN access with reverse proxy, auth, and TLS:
 
 ```bash
 sudo ./scripts/install_dashboard_service.sh
 sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
-	DASHBOARD_AUTH_USER=admin \
-	DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
-	./scripts/install_dashboard_reverse_proxy.sh
+ DASHBOARD_AUTH_USER=admin \
+ DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
+ ./scripts/install_dashboard_reverse_proxy.sh
 ```
 
 Then open `https://dashboard.home.arpa` from your LAN device.
@@ -108,22 +110,22 @@ python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219
 ## Stage 1 Validation Checklist
 
 1. `sudo ./scripts/setup_minio.sh`
-1. `sudo ./scripts/healthcheck.sh`
-1. `sudo ./scripts/install_systemd_service.sh`
-1. Reboot host and verify `nomad-lakehouse.service` auto-start
-1. `./scripts/setup_python_env.sh`
-1. Run all three pipeline scripts
-1. Verify outputs in `data/output/`
-1. Run security workflow and log findings
-1. Record evidence in `docs/week1-closure.md`
+2. `sudo ./scripts/healthcheck.sh`
+3. `sudo ./scripts/install_systemd_service.sh`
+4. Reboot host and verify `nomad-lakehouse.service` auto-start
+5. `./scripts/setup_python_env.sh`
+6. Run all three pipeline scripts
+7. Verify outputs in `data/output/`
+8. Run security workflow and log findings
+9. Record evidence in `docs/week1-closure.md`
 
 ## Week 2 Validation Checklist
 
 1. Ensure services are running: `sudo ./scripts/setup_minio.sh`
-1. Activate environment: `source .venv/bin/activate`
-1. Run Bronze workflow: `python3 scripts/create_bronze_tables.py`
-1. Verify generated contract: `cat data/contracts/bronze_orders_contract.json`
-1. Verify Bronze table is queryable:
+2. Activate environment: `source .venv/bin/activate`
+3. Run Bronze workflow: `python3 scripts/create_bronze_tables.py`
+4. Verify generated contract: `cat data/contracts/bronze_orders_contract.json`
+5. Verify Bronze table is queryable:
 
 ```bash
 python3 - <<'PY'

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="section">
+  <h2>System Configuration</h2>
+  <p>Update environment settings below. Changes will be saved to the .env file.</p>
+  <form id="config-form" class="config-form">
+    <div id="config-fields">
+      <!-- Injected by JS -->
+    </div>
+    <button type="submit" class="primary-btn">Save Configuration</button>
+  </form>
+  <div id="config-alert" class="alert hidden"></div>
+</section>
+
+<section class="section">
+  <h2>Interactive Pipeline Control</h2>
+  <p>Trigger pipeline stages manually for testing and validation.</p>
+  <div class="action-buttons">
+    <button type="button" class="action-btn" data-script="create_bronze">▶ Run Bronze Setup</button>
+    <button type="button" class="action-btn" data-script="bronze_to_silver">▶ Run Silver Stage</button>
+    <button type="button" class="action-btn" data-script="silver_to_gold">▶ Run Gold Stage</button>
+  </div>
+  <pre id="action-output" class="terminal-output"></pre>
+</section>
+{% endblock %}
