@@ -19,10 +19,12 @@ chmod +x scripts/*.sh
 
 The setup TUI writes `.env`, auto-generates `CATALOG_JDBC_URI` from the selected PostgreSQL database and port,
 and includes dashboard reverse-proxy defaults (`DASHBOARD_*`).
+It also provides setup-preference toggles and prints a guided checklist for stack bootstrapping and dashboard access.
 You can still edit `.env` manually and rotate at least:
 
 - `MINIO_ROOT_PASSWORD`
 - `POSTGRES_PASSWORD`
+- `DASHBOARD_AUTH_PASSWORD`
 
 ## Start Services
 
@@ -76,16 +78,14 @@ Install the dashboard systemd service and Caddy reverse proxy:
 
 ```bash
 sudo ./scripts/install_dashboard_service.sh
-sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
-	DASHBOARD_AUTH_USER=admin \
-	DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
-	./scripts/install_dashboard_reverse_proxy.sh
+set -a; source .env; set +a
+sudo -E ./scripts/install_dashboard_reverse_proxy.sh
 ```
 
 Verify from server:
 
 ```bash
-curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
+curl -k -u "${DASHBOARD_AUTH_USER}":"${DASHBOARD_AUTH_PASSWORD}" "https://${DASHBOARD_DOMAIN}/api/status/overview"
 systemctl status --no-pager nomad-dashboard.service caddy
 ```
 

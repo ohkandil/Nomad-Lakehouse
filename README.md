@@ -1,33 +1,38 @@
 # Nomad Lakehouse
 
-![Nomad Lakehouse Logo](docs/assets/nomad-lakehouse-logo.png)
+<p align="center">
+ <img src="docs/assets/nomad-lakehouse-logo.png" alt="Nomad Lakehouse Logo" width="260">
+</p>
 
-Lightweight, local-first data lakehouse for Ubuntu servers and homelabs.
+Local-first data lakehouse for Ubuntu servers and homelabs.
 
-Nomad focuses on practical Bronze/Silver/Gold workflows using open-source components, with minimal infrastructure overhead and strong security defaults.
+Nomad Lakehouse is a portfolio-ready project that demonstrates Bronze/Silver/Gold data engineering patterns without cloud overhead. It combines open-source storage, metadata, analytics, and a FastAPI dashboard into a reproducible, script-driven workflow.
 
-## Main Goal
+## ✨ At a Glance
 
-Nomad is designed to fill the gap between toy local demos and heavyweight enterprise lakehouse stacks.
+- 🏠 Local-first lakehouse for homelabs and Ubuntu servers
+- 🔁 Bronze/Silver/Gold pipeline with contract-based ingestion
+- 🧱 MinIO, PostgreSQL, DuckDB, Python, and FastAPI
+- 🛠️ Docker Compose plus shell scripts for repeatable operations
+- 🔒 Security, validation, and documentation baked into the repo
 
-It is intentionally:
+## 💼 Why It Works Well On A Resume Or LinkedIn
 
-- Lightweight and resource-aware
-- Easy to deploy on local servers
-- Portable across machines using Docker Compose
-- Modular, so each operational function is script-based and composable
+- 📐 Shows production-style architecture in a small, explainable footprint
+- 🔍 Makes the operational flow visible instead of hiding it behind a managed platform
+- 🗣️ Gives you a clean story for data engineering interviews, demos, and portfolio posts
 
-## Stack and Why
+## 🧰 Stack
 
 - MinIO: S3-compatible object storage for local data lake files
-- PostgreSQL: stable JDBC metadata backend for catalog state
-- Apache Iceberg workflow path: modern table-format direction for ACID/versioned data patterns
+- PostgreSQL: JDBC metadata backend for catalog state
+- Apache Iceberg path: modern table-format direction for ACID and versioned data patterns
 - Python 3: portable pipeline and validation scripts
 - DuckDB: fast local query engine for analytics and verification
 - FastAPI dashboard: interactive operational UI for health and pipeline monitoring
 - Docker Compose: reproducible service orchestration on a single machine
 
-## Quick Start (Ubuntu 24.04)
+## 🚀 Quick Start
 
 ```bash
 git clone https://github.com/ohkandil/nomad-lakehouse nomad-lakehouse
@@ -43,9 +48,16 @@ python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
-## Admin Dashboard
+The first-setup wizard now lets you:
 
-Run:
+- set and validate credentials and service ports
+- customize dashboard reverse-proxy settings (`DASHBOARD_*`)
+- choose setup preferences (stack, Python env, pipeline, services)
+- receive a guided post-save checklist for stack startup and dashboard access
+
+## 📊 Dashboard
+
+Run the dashboard locally:
 
 ```bash
 source .venv/bin/activate
@@ -63,34 +75,32 @@ Secure LAN access with reverse proxy, auth, and TLS:
 
 ```bash
 sudo ./scripts/install_dashboard_service.sh
-sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
- DASHBOARD_AUTH_USER=admin \
- DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
- ./scripts/install_dashboard_reverse_proxy.sh
+set -a; source .env; set +a
+sudo -E ./scripts/install_dashboard_reverse_proxy.sh
 ```
 
 Then open `https://dashboard.home.arpa` from your LAN device.
 
-## Current Implementation
+## ✅ What It Includes
 
-- Linux-first deployment baseline
-- MinIO + PostgreSQL services with health checks
-- Bucket bootstrap (`minio-init`) and environment bootstrap scripts
-- Bronze ingestion contract generation (`data/contracts/bronze_orders_contract.json`)
-- Bronze table materialization in DuckDB (`bronze.orders`) with rerunnable `CREATE OR REPLACE` semantics
-- Bronze -> Silver -> Gold starter pipeline
-- CI with lint, typing, tests, and security checks
+- 🐧 Linux-first deployment baseline
+- 🧪 MinIO and PostgreSQL services with health checks
+- 🪣 Bucket bootstrap (`minio-init`) and environment bootstrap scripts
+- 📄 Bronze ingestion contract generation (`data/contracts/bronze_orders_contract.json`)
+- 🪄 Bronze table materialization in DuckDB (`bronze.orders`) with rerunnable `CREATE OR REPLACE` semantics
+- 🌊 Bronze -> Silver -> Gold starter pipeline
+- 🤖 CI with lint, typing, tests, and security checks
 
-## Week 2 Highlights
+## 🌟 Week 2 Highlights
 
-- Catalog backend connectivity validation: `create_bronze_tables.py` validates JDBC target reachability from `CATALOG_JDBC_URI`
-- Repeatable Bronze setup: reruns update the same `bronze.orders` table without manual cleanup
-- Contract-first ingestion: schema/constraints exported as a versioned JSON contract
-- Recruiter-friendly evidence path: closure checklist and explicit verification commands
+- 🔗 Catalog backend connectivity validation: `create_bronze_tables.py` validates JDBC target reachability from `CATALOG_JDBC_URI`
+- ♻️ Repeatable Bronze setup: reruns update the same `bronze.orders` table without manual cleanup
+- 📑 Contract-first ingestion: schema and constraints exported as a versioned JSON contract
+- 🧾 Recruiter-friendly evidence path: closure checklist and explicit verification commands
 
 Current verification evidence may vary by host environment. Treat `docs/week2-closure.md` as the source of truth for your latest local validation run.
 
-## Security Workflow
+## 🔐 Security Workflow
 
 Mandatory stage gate:
 
@@ -107,29 +117,32 @@ If vulnerabilities are found:
 python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219
 ```
 
-## Stage 1 Validation Checklist
+## 🧪 Validation
+
+Stage 1:
 
 1. `sudo ./scripts/setup_minio.sh`
 2. `sudo ./scripts/healthcheck.sh`
 3. `sudo ./scripts/install_systemd_service.sh`
-4. Reboot host and verify `nomad-lakehouse.service` auto-start
+4. Reboot the host and verify `nomad-lakehouse.service` auto-starts
 5. `./scripts/setup_python_env.sh`
 6. Run all three pipeline scripts
 7. Verify outputs in `data/output/`
-8. Run security workflow and log findings
+8. Run the security workflow and log findings
 9. Record evidence in `docs/week1-closure.md`
 
-## Week 2 Validation Checklist
+Week 2:
 
 1. Ensure services are running: `sudo ./scripts/setup_minio.sh`
-2. Activate environment: `source .venv/bin/activate`
-3. Run Bronze workflow: `python3 scripts/create_bronze_tables.py`
-4. Verify generated contract: `cat data/contracts/bronze_orders_contract.json`
-5. Verify Bronze table is queryable:
+2. Activate the environment: `source .venv/bin/activate`
+3. Run the Bronze workflow: `python3 scripts/create_bronze_tables.py`
+4. Verify the generated contract: `cat data/contracts/bronze_orders_contract.json`
+5. Verify the Bronze table is queryable:
 
 ```bash
 python3 - <<'PY'
 import duckdb
+
 con = duckdb.connect("data/output/lakehouse.duckdb")
 print(con.execute("SELECT COUNT(*) AS rows FROM bronze.orders").fetchall())
 print(con.execute("SELECT * FROM bronze.orders ORDER BY order_id LIMIT 5").fetchdf())
@@ -138,66 +151,14 @@ PY
 
 1. Record evidence in `docs/week2-closure.md`
 
-## Next Steps
+## 🛣️ Next Steps
 
 - Expand from Bronze contract and DuckDB table materialization to full Iceberg table commit flow
 - Add incremental ingestion and stronger data quality contracts
 - Add richer observability and operational diagnostics
-- Improve onboarding path toward near plug-and-play deployment
+- Improve onboarding toward near plug-and-play deployment
 
-## Documentation Policy
-
-Every behavioral, operational, or workflow change must include matching documentation updates in the same pull request.
-
-## Repository Layout
-
-```text
-.
-├── .github/workflows/ci.yml
-├── docker-compose.yml
-├── pyproject.toml
-├── configs/
-│   ├── caddy/
-│   │   └── dashboard.Caddyfile.template
-│   └── systemd/
-│       ├── nomad-dashboard.service.template
-│       └── nomad-lakehouse.service.template
-├── dashboard/
-│   ├── app.py
-│   ├── health_sources.py
-│   ├── pipeline_sources.py
-│   ├── security_sources.py
-│   ├── static/
-│   └── templates/
-├── scripts/
-│   ├── setup_minio.sh
-│   ├── install_systemd_service.sh
-│   ├── install_dashboard_service.sh
-│   ├── install_dashboard_reverse_proxy.sh
-│   ├── setup_python_env.sh
-│   ├── healthcheck.sh
-│   ├── security_scan.sh
-│   ├── remediate_python_vulns.sh
-│   ├── hardening_checklist.sh
-│   ├── backup_metadata.sh
-│   ├── restore_metadata.sh
-│   ├── create_bronze_tables.py
-│   ├── bronze_to_silver.py
-│   └── silver_to_gold.py
-├── docs/
-│   ├── setup.md
-│   ├── ubuntu-deploy.md
-│   ├── architecture.md
-│   ├── examples.md
-│   ├── admin-dashboard-plan.md
-│   ├── admin-dashboard.md
-│   ├── week1-closure.md
-│   └── week2-closure.md
-├── data/sample/orders.csv
-└── tests/
-```
-
-## Documentation Index
+## 📚 Documentation Index
 
 - Setup guide: `docs/setup.md`
 - Deployment runbook: `docs/ubuntu-deploy.md`
@@ -209,7 +170,20 @@ Every behavioral, operational, or workflow change must include matching document
 - Week 2 closure evidence: `docs/week2-closure.md`
 - Implementation roadmap: `PROJECT_PLAN.md`
 
-## Portfolio Notes (Junior Data Engineer)
+## 🗂️ Repository Layout
+
+```text
+.
+├── docker-compose.yml
+├── pyproject.toml
+├── dashboard/
+├── scripts/
+├── docs/
+├── data/
+└── tests/
+```
+
+## 👤 Portfolio Notes
 
 This repository is structured so a junior engineer can clearly present project ownership:
 
@@ -218,6 +192,6 @@ This repository is structured so a junior engineer can clearly present project o
 - Engineering maturity: CI, type checks, security scanning, and documentation discipline
 - Communication quality: setup guides, architecture notes, examples, and closure evidence artifacts
 
-## License
+## 📄 License
 
 See `LICENSE`.

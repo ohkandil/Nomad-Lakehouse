@@ -61,16 +61,14 @@ curl -fsS http://127.0.0.1:8088/api/status/overview
 Install and configure Caddy reverse proxy:
 
 ```bash
-sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
-	DASHBOARD_AUTH_USER=admin \
-	DASHBOARD_AUTH_PASSWORD='change-me-strong-password' \
-	./scripts/install_dashboard_reverse_proxy.sh
+set -a; source .env; set +a
+sudo -E ./scripts/install_dashboard_reverse_proxy.sh
 ```
 
 Validate HTTPS route from host:
 
 ```bash
-curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
+curl -k -u "${DASHBOARD_AUTH_USER}":"${DASHBOARD_AUTH_PASSWORD}" "https://${DASHBOARD_DOMAIN}/api/status/overview"
 systemctl status --no-pager caddy
 ```
 

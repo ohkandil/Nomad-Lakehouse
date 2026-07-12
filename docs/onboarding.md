@@ -7,19 +7,21 @@ Welcome to the Nomad Lakehouse project! This document will help you get up to sp
 Nomad Lakehouse is a lightweight, local-first data lakehouse implementation for Ubuntu servers and homelabs. It demonstrates practical Bronze/Silver/Gold workflows using open-source components with minimal infrastructure overhead.
 
 **Key Technologies:**
+
 - **Storage:** MinIO (S3-compatible object storage)
-- **Table Format:** Apache Iceberg 
+- **Table Format:** Apache Iceberg
 - **Metadata Backend:** PostgreSQL (JDBC catalog)
 - **Query Engine:** DuckDB (local analytics)
 - **Orchestration:** Docker Compose
 - **Pipelines:** Python scripts for medallion layers (Bronze → Silver → Gold)
 
-**Live Demo:** http://127.0.0.1:8088/ (when dashboard is running)
+**Live Demo:** <http://127.0.0.1:8088/> (when dashboard is running)
 **Documentation:** See the `docs/` directory for detailed guides
 
 ## Quick Start (5-10 Minutes)
 
 ### Prerequisites
+
 - Ubuntu 24.04 LTS (or compatible Linux)
 - Docker Engine 24+ with Compose plugin
 - Python 3.11+
@@ -27,6 +29,7 @@ Nomad Lakehouse is a lightweight, local-first data lakehouse implementation for 
 - Git
 
 ### Setup Commands
+
 ```bash
 # 1. Clone repository
 git clone https://github.com/ohkandil/nomad-lakehouse nomad-lakehouse
@@ -34,7 +37,7 @@ cd nomad-lakehouse
 
 # 2. Configure environment
 cp .env.example .env
-python3 scripts/configure_setup_tui.py  # Interactive setup TUI
+python3 scripts/configure_setup_tui.py  # Interactive first-setup wizard
 
 # 3. Make scripts executable
 chmod +x scripts/*.sh
@@ -56,12 +59,18 @@ python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 ```
 
 ### Verify It Works
+
 After running the above commands, verify:
-- [ ] MinIO console accessible at http://127.0.0.1:9001
+
+- [ ] MinIO console accessible at <http://127.0.0.1:9001>
 - [ ] PostgreSQL accepting connections on port 5432
 - [ ] Bronze table created: `SELECT COUNT(*) FROM bronze.orders` returns > 0
-- [ ] Dashboard loads at http://127.0.0.1:8088
+- [ ] Dashboard loads at <http://127.0.0.1:8088>
 - [ ] Sample data visible in dashboard views
+
+Wizard note:
+
+- The setup wizard validates credentials/ports, supports dashboard auth configuration, and prints a post-save checklist for stack startup and secure dashboard access.
 
 ## Architecture Overview
 
@@ -93,6 +102,7 @@ After running the above commands, verify:
 ```
 
 ### Key Design Decisions
+
 1. **Linux-first:** Optimized for Ubuntu 24.04 LTS deployment
 2. **Resource-conscious:** Designed to run on 4GB RAM machines
 3. **Modular pipelines:** Each medallion layer is a separate script
@@ -120,6 +130,7 @@ After running the above commands, verify:
 ## Common Developer Tasks
 
 ### Adding a New Data Source
+
 1. Add sample data to `data/sample/`
 2. Create ingestion contract in `data/contracts/` (follow existing pattern)
 3. Update `create_bronze_tables.py` to handle new source type
@@ -127,13 +138,15 @@ After running the above commands, verify:
 5. Update medallion pipelines if needed
 
 ### Modifying the Medallion Pipeline
+
 1. **Bronze Layer:** Edit `scripts/create_bronze_tables.py`
-2. **Silver Layer:** Edit `scripts/bronze_to_silver.py` 
+2. **Silver Layer:** Edit `scripts/bronze_to_silver.py`
 3. **Gold Layer:** Edit `scripts/silver_to_gold.py`
 4. Each script follows: read → transform/validate → write
 5. Update corresponding tests in `tests/`
 
 ### Running Health Checks
+
 ```bash
 # Check service status
 sudo ./scripts/healthcheck.sh
@@ -150,6 +163,7 @@ python3 -c "import duckdb, pandas; print('Dependencies OK')"
 ```
 
 ### Running the Test Suite
+
 ```bash
 source .venv/bin/activate
 pytest tests/ -v
@@ -169,6 +183,7 @@ pytest tests/ -v
 | Pipeline script fails | Missing dependency | Check `.venv` has all packages |
 
 ### Useful Diagnostic Commands
+
 ```bash
 # View service logs
 sudo docker compose logs -f minio
@@ -193,6 +208,7 @@ du -sh data/output/
 ```
 
 ### Log Locations
+
 - **Service logs:** `sudo docker compose logs <service>`
 - **Application logs:** Console output when running scripts
 - **Dashboard logs:** Terminal where `uvicorn` is running
@@ -201,6 +217,7 @@ du -sh data/output/
 ## Contribution Guidelines
 
 ### Development Workflow
+
 1. Create feature branch: `git checkout -b feature/your-feature-name`
 2. Make changes with corresponding tests
 3. Ensure CI passes: `pytest tests/`
@@ -208,12 +225,14 @@ du -sh data/output/
 5. Submit PR with descriptive title and summary
 
 ### Coding Standards
+
 - **Python:** Use type hints, follow PEP 8, run `ruff check .`
 - **Shell scripts:** Use `set -euo pipefail`, add comments for complex logic
 - **Documentation:** Update docs in same PR as functional changes
 - **Commits:** Use conventional commits (`feat:`, `fix:`, `docs:`)
 
 ### PR Requirements
+
 - [ ] Code follows project style (run `ruff check .`)
 - [ ] Tests pass (`pytest tests/`)
 - [ ] Documentation updated if behavior changed
@@ -223,6 +242,7 @@ du -sh data/output/
 ## Environment-Specific Notes
 
 ### For Junior Engineers
+
 - Start with understanding the medallion flow: Bronze → Silver → Gold
 - Follow the setup scripts as executable examples
 - Focus on one pipeline script at a time
@@ -230,6 +250,7 @@ du -sh data/output/
 - Refer to `docs/examples.md` for code walkthroughs
 
 ### For Senior Engineers
+
 - Review architecture decisions in `docs/architecture.md`
 - Examine the resource constraints and optimization choices
 - Consider scalability limitations and potential improvements
@@ -237,6 +258,7 @@ du -sh data/output/
 - Consider stretch goals from `PROJECT_PLAN.md`
 
 ### For Contractors/Consultants
+
 - Focus on specific scoped features or bug fixes
 - Maintain backward compatibility in pipeline contracts
 - Document any environment-specific assumptions
@@ -248,6 +270,7 @@ du -sh data/output/
 If you're stuck, work through this checklist:
 
 ### Phase 1: Environment
+
 - [ ] Ubuntu 24.04 LTS running
 - [ ] Docker Engine installed and user in docker group
 - [ ] Python 3.11+ available
@@ -255,6 +278,7 @@ If you're stuck, work through this checklist:
 - [ ] Git repository cloned successfully
 
 ### Phase 2: Services
+
 - [ ] `.env` file configured with secure passwords
 - [ ] MinIO service healthy (`sudo docker compose ps minio`)
 - [ ] PostgreSQL service healthy (`sudo docker compose ps postgres`)
@@ -262,12 +286,14 @@ If you're stuck, work through this checklist:
 - [ ] Network connectivity between services
 
 ### Phase 3: Python Environment
+
 - [ ] Virtual environment activated (`source .venv/bin/activate`)
 - [ ] Required packages installed (`pip list` shows duckdb, polgars, etc.)
 - [ ] Scripts have execute permissions
 - [ ] Environment variables loaded correctly
 
 ### Phase 4: Data Flow
+
 - [ ] Sample data present in `data/sample/orders.csv`
 - [ ] Bronze table created without errors
 - [ ] Contract generated in `data/contracts/`
@@ -275,6 +301,7 @@ If you're stuck, work through this checklist:
 - [ ] Output data appears in dashboard views
 
 ### Phase 5: Verification
+
 - [ ] Dashboard loads and shows health metrics
 - [ ] Data visible in pipeline/overview tabs
 - [ ] Security scans pass (if applicable)
@@ -288,7 +315,7 @@ If you're stuck, work through this checklist:
 3. **Project Plan:** See `PROJECT_PLAN.md` for roadmap and decisions
 4. **Architecture Notes:** Read `docs/architecture.md` for design rationale
 5. **Examples:** Look at `docs/examples.md` for code walkthroughs
-6. **Team Communication:** 
+6. **Team Communication:**
    - GitHub Issues for bug reports and feature requests
    - Pull Request discussions for code review
    - Check commit history for recent changes
@@ -298,6 +325,7 @@ If you're stuck, work through this checklist:
 Once you've completed the basic setup and verification:
 
 1. **Explore the codebase:** Run the codebase analyzer script for deeper insights
+
    ```bash
    python3 -m pip install -e '.[dev]'  # Install dev dependencies
    # Then use the onboarding skill analyzer if available

@@ -13,7 +13,14 @@ cd "${PROJECT_ROOT}"
 if [[ ! -f .env ]]; then
   echo "[setup] .env not found. Copying from .env.example"
   cp .env.example .env
-  echo "[setup] Please edit .env and rotate passwords before production use."
+  if command -v python3 >/dev/null 2>&1 && [[ -t 0 && -t 1 ]]; then
+    echo "[setup] Launching interactive first-setup wizard"
+    python3 "${PROJECT_ROOT}/scripts/configure_setup_tui.py"
+  else
+    echo "[setup] Missing interactive terminal for first setup."
+    echo "[setup] Run: python3 scripts/configure_setup_tui.py"
+    exit 1
+  fi
 fi
 
 echo "[setup] Starting core services"
