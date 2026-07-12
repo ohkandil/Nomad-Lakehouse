@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 
 from dashboard.health_sources import collect_overview_status
 from dashboard.pipeline_sources import collect_pipeline_status, collect_quality_status
@@ -69,10 +71,6 @@ def security_page(request: Request) -> HTMLResponse:
         },
     )
 
-
-import re
-import subprocess
-from pydantic import BaseModel
 
 class ConfigUpdate(BaseModel):
     env_vars: dict[str, str]
