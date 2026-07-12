@@ -12,6 +12,15 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - platform dependent
     curses = None  # type: ignore[assignment]
 
+# Color pair constants (will be initialized in _main)
+PAIR_BG = 1          # Window background: white on dark-blue
+PAIR_NORMAL = 2      # Normal text: white on dark-blue
+PAIR_SELECTED = 3    # Selected/highlighted: dark-blue on white (inverted)
+PAIR_HEADER = 4      # Headers/titles: cyan on dark-blue
+PAIR_SUCCESS = 5     # Success messages: green on dark-blue
+PAIR_ERROR = 6       # Error messages: red on dark-blue
+PAIR_INFO = 7        # Help/hints: yellow on dark-blue
+
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
@@ -304,14 +313,14 @@ def _display_value(value: str, is_secret: bool) -> str:
     return "*" * len(value) if value else "(empty)"
 
 
-def _safe_addstr(stdscr: Any, row: int, col: int, text: str) -> None:
+def _safe_addstr(stdscr: Any, row: int, col: int, text: str, attr: int = 0) -> None:
     max_y, max_x = stdscr.getmaxyx()
     if row < 0 or row >= max_y or col >= max_x:
         return
     allowed = max_x - col - 1
     if allowed <= 0:
         return
-    stdscr.addstr(row, col, text[:allowed])
+    stdscr.addstr(row, col, text[:allowed], attr)
 
 
 def _cfg_value(config: SetupConfig, key: str) -> str:
@@ -422,36 +431,72 @@ def _draw_tui(
     message: str,
 ) -> None:
     stdscr.clear()
-    _safe_addstr(stdscr, 0, 0, "Nomad Lakehouse First-Setup Wizard")
+
+    # Title with header style
+    _safe_addstr(stdscr, 0, 0, "Nomad Lakehouse First-Setup Wizard", curses.color_pair(PAIR_HEADER))
+
+    # Instructions
     _safe_addstr(
-        stdscr, 1, 0, "Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit"
+        stdscr, 1, 0, "Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit",
+        curses.color_pair(PAIR_INFO)
     )
+
+    # Section header
     section_name = "Credentials & services" if active_section == "fields" else "Setup preferences"
-    _safe_addstr(stdscr, 2, 0, f"Section: {section_name}")
+    section_attr = curses.color_pair(PAIR_SELECTED) if active_section == "fields" else curses.color_pair(PAIR_NORMAL)
+    _safe_addstr(stdscr, 2, 0, f"Section: {section_name}", section_attr)
+
     fields_start = 4
 
+    # Fields section
     for idx, (label, key, is_secret) in enumerate(FIELD_SPECS):
         marker = ">" if active_section == "fields" and idx == selected_field else " "
         value = _display_value(_cfg_value(config, key), is_secret)
-        _safe_addstr(stdscr, fields_start + idx, 0, f"{marker} {label:<25} : {value}")
 
+        # Highlight selected field
+        if active_section == "fields" and idx == selected_field:
+            attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
+        else:
+            attr = curses.color_pair(PAIR_NORMAL)
+
+        _safe_addstr(stdscr, fields_start + idx, 0, f"{marker} {label:<25} : {value}", attr)
+
+    # Options section
     options_header = fields_start + len(FIELD_SPECS) + 1
-    _safe_addstr(stdscr, options_header, 0, "Setup actions")
+    _safe_addstr(stdscr, options_header, 0, "Setup actions", curses.color_pair(PAIR_HEADER))
+
     for idx, (label, key, _) in enumerate(OPTION_SPECS):
         marker = ">" if active_section == "options" and idx == selected_option else " "
         checked = "x" if _workflow_value(options, key) else " "
-        _safe_addstr(stdscr, options_header + 1 + idx, 0, f"{marker} [{checked}] {label}")
 
+        # Highlight selected option
+        if active_section == "options" and idx == selected_option:
+            attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
+        else:
+            attr = curses.color_pair(PAIR_NORMAL)
+
+        _safe_addstr(stdscr, options_header + 1 + idx, 0, f"{marker} [{checked}] {label}", attr)
+
+    # Info section
     info_row = options_header + len(OPTION_SPECS) + 2
     jdbc_uri = build_catalog_jdbc_uri(config.postgres_db, config.postgres_port)
-    _safe_addstr(stdscr, info_row, 0, f"CATALOG_JDBC_URI (auto): {jdbc_uri}")
+    _safe_addstr(stdscr, info_row, 0, f"CATALOG_JDBC_URI (auto): {jdbc_uri}", curses.color_pair(PAIR_INFO))
+
+    # Help text
     if active_section == "fields":
         help_key = FIELD_SPECS[selected_field][1]
-        _safe_addstr(stdscr, info_row + 1, 0, f"Hint: {FIELD_HELP[help_key]}")
+        _safe_addstr(stdscr, info_row + 1, 0, f"Hint: {FIELD_HELP[help_key]}", curses.color_pair(PAIR_INFO))
     else:
-        _safe_addstr(stdscr, info_row + 1, 0, f"Hint: {OPTION_SPECS[selected_option][2]}")
+        _safe_addstr(stdscr, info_row + 1, 0, f"Hint: {OPTION_SPECS[selected_option][2]}", curses.color_pair(PAIR_INFO))
+
+    # Message (errors/success)
     if message:
-        _safe_addstr(stdscr, info_row + 3, 0, message)
+        # Determine if it's an error or success message
+        if "Cannot save" in message or "Error" in message:
+            attr = curses.color_pair(PAIR_ERROR)
+        else:
+            attr = curses.color_pair(PAIR_SUCCESS)
+        _safe_addstr(stdscr, info_row + 3, 0, message, attr)
 
     stdscr.refresh()
 
@@ -464,7 +509,7 @@ def _edit_selected(stdscr: Any, config: SetupConfig, selected: int) -> str:
 
     stdscr.move(max_y - 1, 0)
     stdscr.clrtoeol()
-    _safe_addstr(stdscr, max_y - 1, 0, prompt)
+    _safe_addstr(stdscr, max_y - 1, 0, prompt, curses.color_pair(PAIR_HEADER))
     stdscr.refresh()
 
     curses.echo()
@@ -496,6 +541,21 @@ def _run_curses_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
         selected_field = 0
         selected_option = 0
         curses.curs_set(0)
+
+        # Initialize colors
+        curses.start_color()
+        curses.use_default_colors()
+        # Define color pairs (all on dark-blue background for a cohesive look)
+        curses.init_pair(PAIR_BG, curses.COLOR_WHITE, curses.COLOR_BLUE)      # Window background
+        curses.init_pair(PAIR_NORMAL, curses.COLOR_WHITE, curses.COLOR_BLUE)   # Normal text
+        curses.init_pair(PAIR_SELECTED, curses.COLOR_BLUE, curses.COLOR_WHITE) # Selected item
+        curses.init_pair(PAIR_HEADER, curses.COLOR_CYAN, curses.COLOR_BLUE)    # Headers
+        curses.init_pair(PAIR_SUCCESS, curses.COLOR_GREEN, curses.COLOR_BLUE)  # Success
+        curses.init_pair(PAIR_ERROR, curses.COLOR_RED, curses.COLOR_BLUE)      # Errors
+        curses.init_pair(PAIR_INFO, curses.COLOR_YELLOW, curses.COLOR_BLUE)    # Hints
+
+        # Set the screen-wide background to dark blue
+        stdscr.bkgd(' ', curses.color_pair(PAIR_BG))
 
         while True:
             _draw_tui(
