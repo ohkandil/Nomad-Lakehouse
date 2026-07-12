@@ -43,18 +43,18 @@ FIELD_SPECS: tuple[tuple[str, str, bool], ...] = (
 
 FIELD_HELP: dict[str, str] = {
     "MINIO_ROOT_USER": "Admin username for MinIO object storage.",
-    "MINIO_ROOT_PASSWORD": "Use 16+ chars. This secures your object storage API and console.",
+    "MINIO_ROOT_PASSWORD": "Use 16+ chars. This secures your object storage API and console.",  # nosec
     "MINIO_API_PORT": "MinIO S3 API port. Keep this open only where needed.",
     "MINIO_CONSOLE_PORT": "MinIO web console port for local administration.",
     "WAREHOUSE_BUCKET": "Main object storage bucket name for lakehouse data.",
     "POSTGRES_DB": "PostgreSQL database used for metadata/catalog state.",
     "POSTGRES_USER": "PostgreSQL user for catalog operations.",
-    "POSTGRES_PASSWORD": "Use 16+ chars. Rotate before shared or production use.",
+    "POSTGRES_PASSWORD": "Use 16+ chars. Rotate before shared or production use.",  # nosec
     "POSTGRES_PORT": "PostgreSQL service port.",
     "AWS_REGION": "S3-compatible region value, e.g. us-east-1.",
     "DASHBOARD_DOMAIN": "Hostname used by Caddy HTTPS reverse proxy.",
     "DASHBOARD_AUTH_USER": "Basic-auth username for dashboard HTTPS access.",
-    "DASHBOARD_AUTH_PASSWORD": "Basic-auth password used to generate the Caddy hash.",
+    "DASHBOARD_AUTH_PASSWORD": "Basic-auth password used to generate the Caddy hash.",  # nosec
     "DASHBOARD_UPSTREAM": "Loopback address for FastAPI upstream, e.g. 127.0.0.1:8088.",
     "DASHBOARD_ALLOWED_CIDRS": "Space-separated CIDR ranges allowed to reach dashboard via Caddy.",
 }
@@ -96,18 +96,18 @@ UPSTREAM_RE = re.compile(r"^(?P<host>[A-Za-z0-9.-]+):(?P<port>\d{1,5})$")
 
 CONFIG_ATTRS_BY_KEY: dict[str, str] = {
     "MINIO_ROOT_USER": "minio_root_user",
-    "MINIO_ROOT_PASSWORD": "minio_root_password",
+    "MINIO_ROOT_PASSWORD": "minio_root_password",  # nosec
     "MINIO_API_PORT": "minio_api_port",
     "MINIO_CONSOLE_PORT": "minio_console_port",
     "WAREHOUSE_BUCKET": "warehouse_bucket",
     "POSTGRES_DB": "postgres_db",
     "POSTGRES_USER": "postgres_user",
-    "POSTGRES_PASSWORD": "postgres_password",
+    "POSTGRES_PASSWORD": "postgres_password",  # nosec
     "POSTGRES_PORT": "postgres_port",
     "AWS_REGION": "aws_region",
     "DASHBOARD_DOMAIN": "dashboard_domain",
     "DASHBOARD_AUTH_USER": "dashboard_auth_user",
-    "DASHBOARD_AUTH_PASSWORD": "dashboard_auth_password",
+    "DASHBOARD_AUTH_PASSWORD": "dashboard_auth_password",  # nosec
     "DASHBOARD_UPSTREAM": "dashboard_upstream",
     "DASHBOARD_ALLOWED_CIDRS": "dashboard_allowed_cidrs",
 }
