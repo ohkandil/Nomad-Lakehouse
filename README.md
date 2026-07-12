@@ -10,14 +10,14 @@ Local-first data lakehouse for Ubuntu servers and homelabs — with an interacti
 
 ## 🎬 What's New
 
-| Feature | What it does |
-|---|---|
-| **🖥️ Colored TUI Wizard** | Interactive curses-based setup with depth effects, paneled layout, and keybindings — sets credentials, ports, and automation preferences in one session |
-| **📊 Admin Dashboard** | FastAPI dashboard with four views: Overview, Pipeline Health, Data Quality, and Security |
-| **🪜 Stack Diagram** | Architecture visualization showing the full lakehouse data flow from MinIO → Iceberg → DuckDB → Dashboard |
-| **🔗 Catalog Validation** | `create_bronze_tables.py` validates JDBC connectivity before writing, with rerunnable `CREATE OR REPLACE` semantics |
-| **📑 Contract-First Ingestion** | Schema and constraints exported as a versioned JSON contract (`data/contracts/bronze_orders_contract.json`) |
-| **🧪 Security Gate** | Automated pipeline with `pip-audit`, Bandit, and remediation scripts |
+| Feature                               | What it does                                                                                                                                             |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **🖥️ Colored TUI Wizard**     | Interactive curses-based setup with depth effects, paneled layout, and keybindings — sets credentials, ports, and automation preferences in one session |
+| **📊 Admin Dashboard**          | FastAPI dashboard with four views: Overview, Pipeline Health, Data Quality, and Security                                                                 |
+| **🪜 Stack Diagram**            | Architecture visualization showing the full lakehouse data flow from MinIO → Iceberg → DuckDB → Dashboard                                             |
+| **🔗 Catalog Validation**       | `create_bronze_tables.py` validates JDBC connectivity before writing, with rerunnable `CREATE OR REPLACE` semantics                                  |
+| **📑 Contract-First Ingestion** | Schema and constraints exported as a versioned JSON contract (`data/contracts/bronze_orders_contract.json`)                                            |
+| **🧪 Security Gate**            | Automated pipeline with`pip-audit`, Bandit, and remediation scripts                                                                                    |
 
 ---
 
@@ -37,7 +37,7 @@ The first-setup wizard walks you through credentials, ports, and automation pref
  <img src="docs/assets/dashboard-screenshot.png" alt="Nomad Lakehouse Admin Dashboard — overview, pipeline health, data quality, and security views" width="640">
 </p>
 
-Four-views dashboard built with FastAPI + Jinja2:  
+Four-views dashboard built with FastAPI + Jinja2:
 overview → pipeline health → data quality → security. Access locally at `127.0.0.1:8088` or via the Caddy HTTPS reverse proxy on your LAN.
 
 ### Stack Architecture Diagram
@@ -62,16 +62,16 @@ Medallion (Bronze → Silver → Gold) data flow over MinIO + Apache Iceberg, qu
 
 ## 🧰 Stack
 
-| Layer | Technology | Role |
-|---|---|---|
-| Object Storage | **MinIO** | S3-compatible storage for lakehouse files |
-| Metadata | **PostgreSQL** | JDBC catalog backend for table state |
-| Table Format | **Apache Iceberg** | ACID-compliant table schema direction |
-| Query Engine | **DuckDB** | Fast local analytics over Bronze/Silver/Gold tables |
-| Pipeline | **Python 3** | Ingestion, transformation, and validation scripts |
-| Dashboard | **FastAPI + Jinja2** | Real-time operational UI with four views |
-| Orchestration | **Docker Compose** | Single-machine service coordination |
-| Front Door | **Caddy** | HTTPS reverse proxy with basic auth |
+| Layer          | Technology                 | Role                                                |
+| -------------- | -------------------------- | --------------------------------------------------- |
+| Object Storage | **MinIO**            | S3-compatible storage for lakehouse files           |
+| Metadata       | **PostgreSQL**       | JDBC catalog backend for table state                |
+| Table Format   | **Apache Iceberg**   | ACID-compliant table schema direction               |
+| Query Engine   | **DuckDB**           | Fast local analytics over Bronze/Silver/Gold tables |
+| Pipeline       | **Python 3**         | Ingestion, transformation, and validation scripts   |
+| Dashboard      | **FastAPI + Jinja2** | Real-time operational UI with four views            |
+| Orchestration  | **Docker Compose**   | Single-machine service coordination                 |
+| Front Door     | **Caddy**            | HTTPS reverse proxy with basic auth                 |
 
 ---
 
@@ -113,11 +113,11 @@ source .venv/bin/activate
 python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 ```
 
-| Route | View |
-|---|---|
-| `/` | Overview — service health at a glance |
-| `/pipeline` | Pipeline health — Bronze/Silver/Gold run status |
-| `/quality` | Data quality — contract adherence and row counts |
+| Route         | View                                               |
+| ------------- | -------------------------------------------------- |
+| `/`         | Overview — service health at a glance             |
+| `/pipeline` | Pipeline health — Bronze/Silver/Gold run status   |
+| `/quality`  | Data quality — contract adherence and row counts  |
 | `/security` | Security — audit results and vulnerability status |
 
 ### Secure LAN access (Caddy + TLS + basic auth)
@@ -200,7 +200,7 @@ print(con.execute("SELECT * FROM bronze.orders ORDER BY order_id LIMIT 5").fetch
 PY
 ```
 
-6. Record evidence in `docs/week2-closure.md`
+1. Record evidence in `docs/week2-closure.md`
 
 > Current verification evidence may vary by host environment. Treat the week-closure docs as the source of truth for your latest local validation run.
 
@@ -218,19 +218,19 @@ PY
 
 ## 📚 Documentation Index
 
-| Document | Description |
-|---|---|
-| `docs/setup.md` | Environment setup guide |
-| `docs/ubuntu-deploy.md` | Full deployment runbook |
-| `docs/architecture.md` | Architecture overview |
-| `docs/examples.md` | Pipeline and query examples |
-| `docs/admin-dashboard-plan.md` | Dashboard implementation plan |
-| `docs/admin-dashboard.md` | Dashboard usage and endpoints |
-| `docs/onboarding.md` | Onboarding guide for new engineers |
-| `docs/week1-closure.md` | Week 1 validation evidence |
-| `docs/week2-closure.md` | Week 2 validation evidence |
-| `PROJECT_PLAN.md` | Long-term implementation roadmap |
-| `Local_Lakehouse_MVP.md` | Original MVP specification |
+| Document                         | Description                        |
+| -------------------------------- | ---------------------------------- |
+| `docs/setup.md`                | Environment setup guide            |
+| `docs/ubuntu-deploy.md`        | Full deployment runbook            |
+| `docs/architecture.md`         | Architecture overview              |
+| `docs/examples.md`             | Pipeline and query examples        |
+| `docs/admin-dashboard-plan.md` | Dashboard implementation plan      |
+| `docs/admin-dashboard.md`      | Dashboard usage and endpoints      |
+| `docs/onboarding.md`           | Onboarding guide for new engineers |
+| `docs/week1-closure.md`        | Week 1 validation evidence         |
+| `docs/week2-closure.md`        | Week 2 validation evidence         |
+| `PROJECT_PLAN.md`              | Long-term implementation roadmap   |
+| `Local_Lakehouse_MVP.md`       | Original MVP specification         |
 
 ---
 
