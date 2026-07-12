@@ -13,13 +13,25 @@ except ModuleNotFoundError:  # pragma: no cover - platform dependent
     curses = None  # type: ignore[assignment]
 
 # Color pair constants (will be initialized in _main)
-PAIR_BG = 1          # Window background: white on dark-blue
-PAIR_NORMAL = 2      # Normal text: white on dark-blue
-PAIR_SELECTED = 3    # Selected/highlighted: dark-blue on white (inverted)
-PAIR_HEADER = 4      # Headers/titles: cyan on dark-blue
+PAIR_BG = 1          # Main background: white on dark-blue
+PAIR_TITLE = 2       # Title bar: black on white (window-title look)
+PAIR_SELECTED = 3    # Selected item: black on cyan (raised-button look)
+PAIR_HEADER = 4      # Section headers: cyan on dark-blue
 PAIR_SUCCESS = 5     # Success messages: green on dark-blue
 PAIR_ERROR = 6       # Error messages: red on dark-blue
 PAIR_INFO = 7        # Help/hints: yellow on dark-blue
+PAIR_STATUS = 8      # Status bar: white on black (recessed bar)
+PAIR_BORDER = 9      # Panel borders: blue on cyan (lighter than BG = raised edge)
+PAIR_SHADOW = 10     # Shadow characters: dim white on black
+
+# Box-drawing characters for depth (panels, borders, shadows)
+HLINE = "─"
+VLINE = "│"
+TL = "┌"    # top-left corner
+TR = "┐"    # top-right corner
+BL = "└"    # bottom-left corner
+BR = "┘"    # bottom-right corner
+SHADOW_CH = "░"  # shadow fill character
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -323,6 +335,25 @@ def _safe_addstr(stdscr: Any, row: int, col: int, text: str, attr: int = 0) -> N
     stdscr.addstr(row, col, text[:allowed], attr)
 
 
+def _fill_line(stdscr: Any, row: int, col: int, ch: str, attr: int = 0) -> None:
+    """Fill a row from col to the right edge with a repeated character."""
+    max_y, max_x = stdscr.getmaxyx()
+    if row < 0 or row >= max_y or col >= max_x:
+        return
+    width = max_x - col - 1
+    if width <= 0:
+        return
+    stdscr.addstr(row, col, ch * width, attr)
+
+
+def _fill_bar(stdscr: Any, row: int, bg_pair: int) -> None:
+    """Fill an entire row with spaces using the given background color pair."""
+    max_y, max_x = stdscr.getmaxyx()
+    if row < 0 or row >= max_y:
+        return
+    stdscr.addstr(row, 0, " " * (max_x - 1), curses.color_pair(bg_pair))
+
+
 def _cfg_value(config: SetupConfig, key: str) -> str:
     return str(getattr(config, CONFIG_ATTRS_BY_KEY[key]))
 
@@ -431,72 +462,125 @@ def _draw_tui(
     message: str,
 ) -> None:
     stdscr.clear()
+    max_y, max_x = stdscr.getmaxyx()
+    _W = max_x - 1  # usable width
 
-    # Title with header style
-    _safe_addstr(stdscr, 0, 0, "Nomad Lakehouse First-Setup Wizard", curses.color_pair(PAIR_HEADER))
+    #
+    # ── Layer 1: Title bar (topmost — black on white, fills full width) ──
+    #
+    _fill_bar(stdscr, 0, PAIR_TITLE)
+    _safe_addstr(stdscr, 0, 2, " NOMAD LAKEHOUSE FIRST-SETUP WIZARD ", curses.color_pair(PAIR_TITLE) | curses.A_BOLD)
 
-    # Instructions
+    # Key bindings (on main blue background)
     _safe_addstr(
-        stdscr, 1, 0, "Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit",
-        curses.color_pair(PAIR_INFO)
+        stdscr, 1, 0,
+        " Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit",
+        curses.color_pair(PAIR_INFO),
     )
 
-    # Section header
-    section_name = "Credentials & services" if active_section == "fields" else "Setup preferences"
-    section_attr = curses.color_pair(PAIR_SELECTED) if active_section == "fields" else curses.color_pair(PAIR_NORMAL)
-    _safe_addstr(stdscr, 2, 0, f"Section: {section_name}", section_attr)
+    # Section indicator with a horizontal rule
+    section_name = "CREDENTIALS & SERVICES" if active_section == "fields" else "SETUP PREFERENCES"
+    section_attr = curses.color_pair(PAIR_SELECTED) if active_section == "fields" else curses.color_pair(PAIR_HEADER)
+    _safe_addstr(stdscr, 2, 0, f"  {section_name} ", section_attr | curses.A_BOLD)
+    # Rest of the line as a dim separator
+    remaining = max(0, _W - len(section_name) - 3)
+    if remaining > 0:
+        stdscr.addstr(2, len(section_name) + 3, HLINE * remaining, curses.color_pair(PAIR_BORDER) | curses.A_DIM)
 
-    fields_start = 4
+    #
+    # ── Layer 2: Fields panel with border and shadow ──
+    #
+    FIELDS_PANEL_TOP = 3
+    num_fields = len(FIELD_SPECS)
+    fields_panel_bottom = FIELDS_PANEL_TOP + num_fields + 2  # top border + N fields + bottom border
 
-    # Fields section
+    # Top border of fields panel
+    top_label = f" Credentials & Services "
+    top_line = TL + top_label + HLINE * max(0, _W - len(top_label) - 1) + TR
+    _safe_addstr(stdscr, FIELDS_PANEL_TOP, 0, top_line, curses.color_pair(PAIR_BORDER))
+
+    # Field rows inside panel
     for idx, (label, key, is_secret) in enumerate(FIELD_SPECS):
+        row = FIELDS_PANEL_TOP + 1 + idx
         marker = ">" if active_section == "fields" and idx == selected_field else " "
         value = _display_value(_cfg_value(config, key), is_secret)
+        line = f"{VLINE} {marker} {label:<25} : {value}"
 
-        # Highlight selected field
         if active_section == "fields" and idx == selected_field:
             attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
         else:
-            attr = curses.color_pair(PAIR_NORMAL)
+            attr = curses.color_pair(PAIR_BG)
 
-        _safe_addstr(stdscr, fields_start + idx, 0, f"{marker} {label:<25} : {value}", attr)
+        # Pad line to right edge with spaces then vertical bar
+        padded = line + " " * max(0, _W - len(line)) + VLINE
+        _safe_addstr(stdscr, row, 0, padded, attr)
 
-    # Options section
-    options_header = fields_start + len(FIELD_SPECS) + 1
-    _safe_addstr(stdscr, options_header, 0, "Setup actions", curses.color_pair(PAIR_HEADER))
+    # Bottom border + shadow
+    btm_line = BL + HLINE * max(0, _W - 1) + BR
+    _safe_addstr(stdscr, fields_panel_bottom, 0, btm_line, curses.color_pair(PAIR_BORDER))
+    # Shadow: one row below, shifted right by 1
+    _fill_line(stdscr, fields_panel_bottom + 1, 1, SHADOW_CH, curses.color_pair(PAIR_SHADOW) | curses.A_DIM)
 
+    #
+    # ── Layer 3: Options panel with border and shadow ──
+    #
+    OPTIONS_PANEL_TOP = fields_panel_bottom + 2  # skip bottom border + shadow rows
+    num_options = len(OPTION_SPECS)
+    options_panel_bottom = OPTIONS_PANEL_TOP + num_options + 2  # top border + header + N options + bottom border
+
+    # Top border
+    opt_label = f" Setup Actions "
+    opt_top = TL + opt_label + HLINE * max(0, _W - len(opt_label) - 1) + TR
+    _safe_addstr(stdscr, OPTIONS_PANEL_TOP, 0, opt_top, curses.color_pair(PAIR_BORDER))
+
+    # Options inside panel
     for idx, (label, key, _) in enumerate(OPTION_SPECS):
+        row = OPTIONS_PANEL_TOP + 1 + idx
         marker = ">" if active_section == "options" and idx == selected_option else " "
         checked = "x" if _workflow_value(options, key) else " "
+        line = f"{VLINE} {marker} [{checked}] {label}"
 
-        # Highlight selected option
         if active_section == "options" and idx == selected_option:
             attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
         else:
-            attr = curses.color_pair(PAIR_NORMAL)
+            attr = curses.color_pair(PAIR_BG)
 
-        _safe_addstr(stdscr, options_header + 1 + idx, 0, f"{marker} [{checked}] {label}", attr)
+        padded = line + " " * max(0, _W - len(line)) + VLINE
+        _safe_addstr(stdscr, row, 0, padded, attr)
 
-    # Info section
-    info_row = options_header + len(OPTION_SPECS) + 2
+    # Bottom border + shadow
+    opt_btm = BL + HLINE * max(0, _W - 1) + BR
+    _safe_addstr(stdscr, options_panel_bottom, 0, opt_btm, curses.color_pair(PAIR_BORDER))
+    _fill_line(stdscr, options_panel_bottom + 1, 1, SHADOW_CH, curses.color_pair(PAIR_SHADOW) | curses.A_DIM)
+
+    #
+    # ── Layer 4: Info area (JDBC URI + Hint) ──
+    #
+    INFO_ROW = options_panel_bottom + 2
     jdbc_uri = build_catalog_jdbc_uri(config.postgres_db, config.postgres_port)
-    _safe_addstr(stdscr, info_row, 0, f"CATALOG_JDBC_URI (auto): {jdbc_uri}", curses.color_pair(PAIR_INFO))
+    _safe_addstr(stdscr, INFO_ROW, 0, f"  CATALOG_JDBC_URI (auto): {jdbc_uri}", curses.color_pair(PAIR_INFO))
 
-    # Help text
     if active_section == "fields":
-        help_key = FIELD_SPECS[selected_field][1]
-        _safe_addstr(stdscr, info_row + 1, 0, f"Hint: {FIELD_HELP[help_key]}", curses.color_pair(PAIR_INFO))
+        help_text = FIELD_HELP[FIELD_SPECS[selected_field][1]]
     else:
-        _safe_addstr(stdscr, info_row + 1, 0, f"Hint: {OPTION_SPECS[selected_option][2]}", curses.color_pair(PAIR_INFO))
+        help_text = OPTION_SPECS[selected_option][2]
+    _safe_addstr(stdscr, INFO_ROW + 1, 0, f"  Hint: {help_text}", curses.color_pair(PAIR_INFO))
 
-    # Message (errors/success)
+    #
+    # ── Layer 5: Status bar (recessed — white on black) ──
+    #
+    STATUS_ROW = INFO_ROW + 3
+    _fill_bar(stdscr, STATUS_ROW, PAIR_STATUS)
     if message:
-        # Determine if it's an error or success message
+        _safe_addstr(stdscr, STATUS_ROW, 2, " Status: ", curses.color_pair(PAIR_STATUS) | curses.A_BOLD)
         if "Cannot save" in message or "Error" in message:
-            attr = curses.color_pair(PAIR_ERROR)
+            _safe_addstr(stdscr, STATUS_ROW, 11, message, curses.color_pair(PAIR_ERROR) | curses.A_BOLD)
+        elif "Saved" in message or "Updated" in message or "Toggled" in message:
+            _safe_addstr(stdscr, STATUS_ROW, 11, message, curses.color_pair(PAIR_SUCCESS) | curses.A_BOLD)
         else:
-            attr = curses.color_pair(PAIR_SUCCESS)
-        _safe_addstr(stdscr, info_row + 3, 0, message, attr)
+            _safe_addstr(stdscr, STATUS_ROW, 11, message, curses.color_pair(PAIR_STATUS))
+    else:
+        _safe_addstr(stdscr, STATUS_ROW, 2, " Status: idle — navigate fields or press S to save", curses.color_pair(PAIR_STATUS))
 
     stdscr.refresh()
 
@@ -507,9 +591,13 @@ def _edit_selected(stdscr: Any, config: SetupConfig, selected: int) -> str:
     max_y, max_x = stdscr.getmaxyx()
     prompt = f"{label} [{current}]: "
 
+    # Draw edit prompt on a highlighted bar at the bottom
+    _fill_bar(stdscr, max_y - 2, PAIR_SELECTED)
+    _safe_addstr(stdscr, max_y - 2, 0, " EDIT ", curses.color_pair(PAIR_SELECTED) | curses.A_BOLD)
+    _safe_addstr(stdscr, max_y - 2, 6, prompt, curses.color_pair(PAIR_SELECTED))
     stdscr.move(max_y - 1, 0)
     stdscr.clrtoeol()
-    _safe_addstr(stdscr, max_y - 1, 0, prompt, curses.color_pair(PAIR_HEADER))
+    _safe_addstr(stdscr, max_y - 1, 0, prompt, curses.color_pair(PAIR_SELECTED))
     stdscr.refresh()
 
     curses.echo()
@@ -545,14 +633,17 @@ def _run_curses_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
         # Initialize colors
         curses.start_color()
         curses.use_default_colors()
-        # Define color pairs (all on dark-blue background for a cohesive look)
-        curses.init_pair(PAIR_BG, curses.COLOR_WHITE, curses.COLOR_BLUE)      # Window background
-        curses.init_pair(PAIR_NORMAL, curses.COLOR_WHITE, curses.COLOR_BLUE)   # Normal text
-        curses.init_pair(PAIR_SELECTED, curses.COLOR_BLUE, curses.COLOR_WHITE) # Selected item
-        curses.init_pair(PAIR_HEADER, curses.COLOR_CYAN, curses.COLOR_BLUE)    # Headers
-        curses.init_pair(PAIR_SUCCESS, curses.COLOR_GREEN, curses.COLOR_BLUE)  # Success
-        curses.init_pair(PAIR_ERROR, curses.COLOR_RED, curses.COLOR_BLUE)      # Errors
-        curses.init_pair(PAIR_INFO, curses.COLOR_YELLOW, curses.COLOR_BLUE)    # Hints
+        # Color pairs organized by depth layer (back-to-front)
+        curses.init_pair(PAIR_SHADOW, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Deepest: shadow
+        curses.init_pair(PAIR_STATUS, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Recessed: status bar
+        curses.init_pair(PAIR_BG, curses.COLOR_WHITE, curses.COLOR_BLUE)       # Main surface: content
+        curses.init_pair(PAIR_BORDER, curses.COLOR_BLUE, curses.COLOR_CYAN)    # Raised edge: border
+        curses.init_pair(PAIR_TITLE, curses.COLOR_BLACK, curses.COLOR_WHITE)   # Topmost: title bar
+        curses.init_pair(PAIR_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN) # Button: raised/highlighted
+        curses.init_pair(PAIR_HEADER, curses.COLOR_CYAN, curses.COLOR_BLUE)    # Subtle: section headers
+        curses.init_pair(PAIR_SUCCESS, curses.COLOR_GREEN, curses.COLOR_BLUE)  # Feedback: success
+        curses.init_pair(PAIR_ERROR, curses.COLOR_RED, curses.COLOR_BLUE)      # Feedback: error
+        curses.init_pair(PAIR_INFO, curses.COLOR_YELLOW, curses.COLOR_BLUE)    # Subtle: hints
 
         # Set the screen-wide background to dark blue
         stdscr.bkgd(' ', curses.color_pair(PAIR_BG))
