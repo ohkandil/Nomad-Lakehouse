@@ -425,8 +425,13 @@ def get_status_color() -> str:
 @component
 def TitleBar() -> Any:
     return Box(
-        Text(" NOMAD LAKEHOUSE FIRST-SETUP WIZARD ", fg="black", bg="white", bold=True),
-        bg="white", flex_grow=1, padding_left=2
+        Text(" NOMAD LAKEHOUSE FIRST-SETUP WIZARD ", fg="white", bg="blue", bold=True),
+        border_bottom=True,
+        border_style="double",
+        border_color="cyan",
+        flex_grow=1,
+        padding_left=2,
+        padding_top=1
     )
 
 @component
@@ -445,14 +450,14 @@ def SectionHeader() -> Any:
         return "CREDENTIALS & SERVICES" if active_section() == "fields" else "SETUP PREFERENCES"
     
     def get_color() -> str:
-        return "black" if active_section() == "fields" else "cyan"
+        return "cyan" if active_section() == "fields" else "white"
     
     def get_bg() -> str:
-        return "cyan" if active_section() == "fields" else "blue"
+        return "black"
 
     return Box(
-        Text(lambda: f"  {get_title()} ", fg=get_color, bg=get_bg, bold=True),  # type: ignore[arg-type]
-        border_bottom=True, border_color="blue", border_style="single", flex_grow=1
+        Text(lambda: f"  {get_title()} ", fg=get_color, bg=get_bg, bold=True),
+        border_bottom=True, border_color="blue", border_style="single", flex_grow=1, padding_top=1
     )
 
 @component
@@ -471,13 +476,13 @@ def CredentialsPanel() -> Any:
             return "*" * len(val) if val else "(empty)"
             
         def get_fg() -> str:
-            return "black" if is_selected() else "white"
+            return "black" if is_selected() else "cyan"
             
         def get_bg() -> str:
-            return "cyan" if is_selected() else "blue"
+            return "cyan" if is_selected() else "black"
             
         def get_marker() -> str:
-            return ">" if is_selected() else " "
+            return "▶" if is_selected() else " "
 
         # Normal display
         display_box = Box(
@@ -485,7 +490,7 @@ def CredentialsPanel() -> Any:
                 lambda: f" {get_marker()} {label:<25} : {display_text()}", 
                 fg=get_fg, bg=get_bg, bold=is_selected  # type: ignore[arg-type]
             ),
-            bg=get_bg, flex_grow=1, padding_left=1  # type: ignore[arg-type]
+            bg=get_bg, flex_grow=1, padding_left=2  # type: ignore[arg-type]
         )
         
         # Edit mode display
@@ -505,7 +510,7 @@ def CredentialsPanel() -> Any:
     return Box(
         *rows,
         title=" Credentials & Services ",
-        border=True, border_color="blue", flex_grow=1, gap=0
+        border=True, border_color="cyan", border_style="rounded", flex_grow=1, gap=0, margin_top=1
     )
 
 @component
@@ -518,20 +523,20 @@ def SetupActionsPanel() -> Any:
             return "x" if option_values[key]() else " "
             
         def get_fg() -> str:
-            return "black" if is_selected() else "white"
+            return "black" if is_selected() else "cyan"
             
         def get_bg() -> str:
-            return "cyan" if is_selected() else "blue"
+            return "cyan" if is_selected() else "black"
             
         def get_marker() -> str:
-            return ">" if is_selected() else " "
+            return "▶" if is_selected() else " "
 
         return Box(
             Text(
                 lambda: f" {get_marker()} [{get_checked()}] {label}", 
                 fg=get_fg, bg=get_bg, bold=is_selected  # type: ignore[arg-type]
             ),
-            bg=get_bg, flex_grow=1, padding_left=1  # type: ignore[arg-type]
+            bg=get_bg, flex_grow=1, padding_left=2  # type: ignore[arg-type]
         )
 
     rows = [make_option_row(i, label, key) for i, (label, key, _) in enumerate(OPTION_SPECS)]
@@ -539,7 +544,7 @@ def SetupActionsPanel() -> Any:
     return Box(
         *rows,
         title=" Setup Actions ",
-        border=True, border_color="blue", flex_grow=1, gap=0
+        border=True, border_color="cyan", border_style="rounded", flex_grow=1, gap=0, margin_top=1
     )
 
 @component
@@ -563,7 +568,7 @@ def InfoBar() -> Any:
     return Box(
         Text(lambda: f"  CATALOG_JDBC_URI (auto): {get_jdbc()}", fg="yellow"),
         Text(lambda: f"  Hint: {get_hint()}", fg="yellow"),
-        flex_direction="column", padding_top=1
+        flex_direction="column", padding_top=1, padding_left=1
     )
 
 @component
@@ -588,7 +593,7 @@ def App() -> Any:
         InfoBar(),
         Box(flex_grow=1), # Spacer
         StatusBar(),
-        flex_direction="column", flex_grow=1, bg="blue"
+        flex_direction="column", flex_grow=1, bg="black"
     )
 
 async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
@@ -706,7 +711,7 @@ async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
 
 def _run_prompt_fallback(config: SetupConfig) -> int:
     options = SetupWorkflowOptions()
-    print("curses is unavailable; using prompt wizard mode instead.")
+    print("TUI is unavailable; using prompt wizard mode instead.")
     print("Press Enter to keep current value.")
 
     for label, key, _ in FIELD_SPECS:
