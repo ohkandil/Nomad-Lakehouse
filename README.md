@@ -12,7 +12,7 @@ Local-first data lakehouse for Ubuntu servers and homelabs — with an interacti
 
 | Feature                               | What it does                                                                                                                                             |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **🖥️ Colored TUI Wizard**     | Interactive curses-based setup with depth effects, paneled layout, and keybindings — sets credentials, ports, and automation preferences in one session |
+| **🖥️ Colored TUI Wizard**     | Interactive OpenTUI-based setup with reactive signals, flexbox layout, and keybindings — sets credentials, ports, and automation preferences in one session |
 | **📊 Admin Dashboard**          | FastAPI dashboard with four views: Overview, Pipeline Health, Data Quality, and Security                                                                 |
 | **🪜 Stack Diagram**            | Architecture visualization showing the full lakehouse data flow from MinIO → Iceberg → DuckDB → Dashboard                                             |
 | **🔗 Catalog Validation**       | `create_bronze_tables.py` validates JDBC connectivity before writing, with rerunnable `CREATE OR REPLACE` semantics                                  |
@@ -93,7 +93,7 @@ python3 scripts/silver_to_gold.py
 
 ### What the TUI wizard sets up
 
-The first-setup wizard (`configure_setup_tui.py`) gives you an interactive curses terminal with:
+The first-setup wizard (`configure_setup_tui.py`) gives you an interactive OpenTUI terminal with:
 
 - ✏️ **15 configuration fields** — MinIO admin credentials, S3 ports, PostgreSQL connection, bucket name, AWS region, dashboard domain/auth/upstream/CIDRs
 - ⚙️ **6 setup actions** — toggle stack auto-start, Python environment creation, pipeline execution, dashboard service, and Caddy HTTPS proxy
@@ -145,7 +145,7 @@ All four dashboard views are served behind HTTPS with basic-auth credentials you
 - 📊 Four-view admin dashboard with API-driven status
 - 🔐 Security gate: `pip-audit`, Bandit, and remediation scripts
 - 🤖 CI pipeline with lint (Ruff), typing (mypy), tests (pytest), and security
-- 🎨 Interactive colored TUI with depth-styled layout
+- 🎨 Interactive OpenTUI-based TUI with reactive layout
 
 ---
 

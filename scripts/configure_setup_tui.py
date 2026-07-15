@@ -1,38 +1,16 @@
 #!/usr/bin/env python3
+# mypy: disable-error-code="no-any-return"
 from __future__ import annotations
 
 import argparse
+import asyncio
 import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-try:
-    import curses
-except ModuleNotFoundError:  # pragma: no cover - platform dependent
-    curses = None  # type: ignore[assignment]
-
-# Color pair constants (will be initialized in _main)
-PAIR_BG = 1          # Main background: white on dark-blue
-PAIR_TITLE = 2       # Title bar: black on white (window-title look)
-PAIR_SELECTED = 3    # Selected item: black on cyan (raised-button look)
-PAIR_HEADER = 4      # Section headers: cyan on dark-blue
-PAIR_SUCCESS = 5     # Success messages: green on dark-blue
-PAIR_ERROR = 6       # Error messages: red on dark-blue
-PAIR_INFO = 7        # Help/hints: yellow on dark-blue
-PAIR_STATUS = 8      # Status bar: white on black (recessed bar)
-PAIR_BORDER = 9      # Panel borders: blue on cyan (lighter than BG = raised edge)
-PAIR_SHADOW = 10     # Shadow characters: dim white on black
-
-# Box-drawing characters for depth (panels, borders, shadows)
-HLINE = "─"
-VLINE = "│"
-TL = "┌"    # top-left corner
-TR = "┐"    # top-right corner
-BL = "└"    # bottom-left corner
-BR = "┘"    # bottom-right corner
-SHADOW_CH = "░"  # shadow fill character
-
+from opentui import Box, Input, Signal, Text, component, render, use_keyboard, use_renderer
+from opentui.events import KeyEvent
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
@@ -325,35 +303,6 @@ def _display_value(value: str, is_secret: bool) -> str:
     return "*" * len(value) if value else "(empty)"
 
 
-def _safe_addstr(stdscr: Any, row: int, col: int, text: str, attr: int = 0) -> None:
-    max_y, max_x = stdscr.getmaxyx()
-    if row < 0 or row >= max_y or col >= max_x:
-        return
-    allowed = max_x - col - 1
-    if allowed <= 0:
-        return
-    stdscr.addstr(row, col, text[:allowed], attr)
-
-
-def _fill_line(stdscr: Any, row: int, col: int, ch: str, attr: int = 0) -> None:
-    """Fill a row from col to the right edge with a repeated character."""
-    max_y, max_x = stdscr.getmaxyx()
-    if row < 0 or row >= max_y or col >= max_x:
-        return
-    width = max_x - col - 1
-    if width <= 0:
-        return
-    stdscr.addstr(row, col, ch * width, attr)
-
-
-def _fill_bar(stdscr: Any, row: int, bg_pair: int) -> None:
-    """Fill an entire row with spaces using the given background color pair."""
-    max_y, max_x = stdscr.getmaxyx()
-    if row < 0 or row >= max_y:
-        return
-    stdscr.addstr(row, 0, " " * (max_x - 1), curses.color_pair(bg_pair))
-
-
 def _cfg_value(config: SetupConfig, key: str) -> str:
     return str(getattr(config, CONFIG_ATTRS_BY_KEY[key]))
 
@@ -452,256 +401,306 @@ def build_setup_guide(config: SetupConfig, options: SetupWorkflowOptions) -> lis
     return lines
 
 
-def _draw_tui(
-    stdscr: Any,
-    config: SetupConfig,
-    options: SetupWorkflowOptions,
-    active_section: str,
-    selected_field: int,
-    selected_option: int,
-    message: str,
-) -> None:
-    stdscr.clear()
-    max_y, max_x = stdscr.getmaxyx()
-    _W = max_x - 1  # usable width
+# ==============================================================================
+# OpenTUI Components & State
+# ==============================================================================
 
-    #
-    # ── Layer 1: Title bar (topmost — black on white, fills full width) ──
-    #
-    _fill_bar(stdscr, 0, PAIR_TITLE)
-    _safe_addstr(stdscr, 0, 2, " NOMAD LAKEHOUSE FIRST-SETUP WIZARD ", curses.color_pair(PAIR_TITLE) | curses.A_BOLD)
+active_section = Signal("fields", name="active_section")
+selected_idx = Signal(0, name="selected_idx")
+mode = Signal("navigate", name="mode")
+status_message = Signal("idle — navigate fields or press S to save", name="status_message")
+status_is_error = Signal(False, name="status_is_error")
+status_is_success = Signal(False, name="status_is_success")
 
-    # Key bindings (on main blue background)
-    _safe_addstr(
-        stdscr, 1, 0,
-        " Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit",
-        curses.color_pair(PAIR_INFO),
+field_values: dict[str, Any] = {}
+option_values: dict[str, Any] = {}
+
+def get_status_color() -> str:
+    if status_is_error():
+        return "red"
+    if status_is_success():
+        return "green"
+    return "white"
+
+@component
+def TitleBar() -> Any:
+    return Box(
+        Text(" NOMAD LAKEHOUSE FIRST-SETUP WIZARD ", fg="black", bg="white", bold=True),
+        bg="white", flex_grow=1, padding_left=2
     )
 
-    # Section indicator with a horizontal rule
-    section_name = "CREDENTIALS & SERVICES" if active_section == "fields" else "SETUP PREFERENCES"
-    section_attr = curses.color_pair(PAIR_SELECTED) if active_section == "fields" else curses.color_pair(PAIR_HEADER)
-    _safe_addstr(stdscr, 2, 0, f"  {section_name} ", section_attr | curses.A_BOLD)
-    # Rest of the line as a dim separator
-    remaining = max(0, _W - len(section_name) - 3)
-    if remaining > 0:
-        stdscr.addstr(2, len(section_name) + 3, HLINE * remaining, curses.color_pair(PAIR_BORDER) | curses.A_DIM)
+@component
+def KeybindingsBar() -> Any:
+    return Box(
+        Text(
+            " Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit", 
+            fg="yellow"
+        ),
+        padding_top=1
+    )
 
-    #
-    # ── Layer 2: Fields panel with border and shadow ──
-    #
-    FIELDS_PANEL_TOP = 3
-    num_fields = len(FIELD_SPECS)
-    fields_panel_bottom = FIELDS_PANEL_TOP + num_fields + 2  # top border + N fields + bottom border
+@component
+def SectionHeader() -> Any:
+    def get_title() -> str:
+        return "CREDENTIALS & SERVICES" if active_section() == "fields" else "SETUP PREFERENCES"
+    
+    def get_color() -> str:
+        return "black" if active_section() == "fields" else "cyan"
+    
+    def get_bg() -> str:
+        return "cyan" if active_section() == "fields" else "blue"
 
-    # Top border of fields panel
-    top_label = f" Credentials & Services "
-    top_line = TL + top_label + HLINE * max(0, _W - len(top_label) - 1) + TR
-    _safe_addstr(stdscr, FIELDS_PANEL_TOP, 0, top_line, curses.color_pair(PAIR_BORDER))
+    return Box(
+        Text(lambda: f"  {get_title()} ", fg=get_color, bg=get_bg, bold=True),  # type: ignore[arg-type]
+        border_bottom=True, border_color="blue", border_style="dashed", flex_grow=1
+    )
 
-    # Field rows inside panel
-    for idx, (label, key, is_secret) in enumerate(FIELD_SPECS):
-        row = FIELDS_PANEL_TOP + 1 + idx
-        marker = ">" if active_section == "fields" and idx == selected_field else " "
-        value = _display_value(_cfg_value(config, key), is_secret)
-        line = f"{VLINE} {marker} {label:<25} : {value}"
+@component
+def CredentialsPanel() -> Any:
+    def make_field_row(idx: int, label: str, key: str, is_secret: bool) -> Any:
+        def is_selected() -> bool:
+            return bool(active_section() == "fields" and selected_idx() == idx)
+            
+        def is_editing() -> bool:
+            return bool(is_selected() and mode() == "edit")
+        
+        def display_text() -> str:
+            val = field_values[key]()
+            if not is_secret:
+                return val
+            return "*" * len(val) if val else "(empty)"
+            
+        def get_fg() -> str:
+            return "black" if is_selected() else "white"
+            
+        def get_bg() -> str:
+            return "cyan" if is_selected() else "blue"
+            
+        def get_marker() -> str:
+            return ">" if is_selected() else " "
 
-        if active_section == "fields" and idx == selected_field:
-            attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
+        # Normal display
+        display_box = Box(
+            Text(
+                lambda: f" {get_marker()} {label:<25} : {display_text()}", 
+                fg=get_fg, bg=get_bg, bold=is_selected  # type: ignore[arg-type]
+            ),
+            bg=get_bg, flex_grow=1, padding_left=1  # type: ignore[arg-type]
+        )
+        
+        # Edit mode display
+        edit_box = Box(
+            Text(f" > {label:<25} : ", fg="black", bg="cyan", bold=True),
+            Input(value=field_values[key], focused=True, bg="cyan", fg="black"),
+            flex_direction="row", bg="cyan", flex_grow=1, padding_left=1
+        )
+
+        return Box(lambda: edit_box if is_editing() else display_box)
+
+    rows = [
+        make_field_row(i, label, key, is_secret) 
+        for i, (label, key, is_secret) in enumerate(FIELD_SPECS)
+    ]
+    
+    return Box(
+        *rows,
+        title=" Credentials & Services ",
+        border=True, border_color="blue", flex_grow=1, gap=0
+    )
+
+@component
+def SetupActionsPanel() -> Any:
+    def make_option_row(idx: int, label: str, key: str) -> Any:
+        def is_selected() -> bool:
+            return bool(active_section() == "options" and selected_idx() == idx)
+        
+        def get_checked() -> str:
+            return "x" if option_values[key]() else " "
+            
+        def get_fg() -> str:
+            return "black" if is_selected() else "white"
+            
+        def get_bg() -> str:
+            return "cyan" if is_selected() else "blue"
+            
+        def get_marker() -> str:
+            return ">" if is_selected() else " "
+
+        return Box(
+            Text(
+                lambda: f" {get_marker()} [{get_checked()}] {label}", 
+                fg=get_fg, bg=get_bg, bold=is_selected  # type: ignore[arg-type]
+            ),
+            bg=get_bg, flex_grow=1, padding_left=1  # type: ignore[arg-type]
+        )
+
+    rows = [make_option_row(i, label, key) for i, (label, key, _) in enumerate(OPTION_SPECS)]
+    
+    return Box(
+        *rows,
+        title=" Setup Actions ",
+        border=True, border_color="blue", flex_grow=1, gap=0
+    )
+
+@component
+def InfoBar() -> Any:
+    def get_jdbc() -> str:
+        db = field_values["POSTGRES_DB"]()
+        port = field_values["POSTGRES_PORT"]()
+        return build_catalog_jdbc_uri(db, port)
+        
+    def get_hint() -> str:
+        if active_section() == "fields":
+            idx = selected_idx()
+            if 0 <= idx < len(FIELD_SPECS):
+                return FIELD_HELP[FIELD_SPECS[idx][1]]
         else:
-            attr = curses.color_pair(PAIR_BG)
+            idx = selected_idx()
+            if 0 <= idx < len(OPTION_SPECS):
+                return OPTION_SPECS[idx][2]
+        return ""
 
-        # Pad line to right edge with spaces then vertical bar
-        padded = line + " " * max(0, _W - len(line)) + VLINE
-        _safe_addstr(stdscr, row, 0, padded, attr)
+    return Box(
+        Text(lambda: f"  CATALOG_JDBC_URI (auto): {get_jdbc()}", fg="yellow"),
+        Text(lambda: f"  Hint: {get_hint()}", fg="yellow"),
+        flex_direction="column", padding_top=1
+    )
 
-    # Bottom border + shadow
-    btm_line = BL + HLINE * max(0, _W - 1) + BR
-    _safe_addstr(stdscr, fields_panel_bottom, 0, btm_line, curses.color_pair(PAIR_BORDER))
-    # Shadow: one row below, shifted right by 1
-    _fill_line(stdscr, fields_panel_bottom + 1, 1, SHADOW_CH, curses.color_pair(PAIR_SHADOW) | curses.A_DIM)
+@component
+def StatusBar() -> Any:
+    def is_status_bold() -> bool:
+        return bool(status_is_error() or status_is_success())
+        
+    return Box(
+        Text(" Status: ", fg="white", bg="black", bold=True),
+        Text(status_message, fg=get_status_color, bg="black", bold=is_status_bold),  # type: ignore[arg-type]
+        flex_direction="row", bg="black", flex_grow=1, padding_left=2
+    )
 
-    #
-    # ── Layer 3: Options panel with border and shadow ──
-    #
-    OPTIONS_PANEL_TOP = fields_panel_bottom + 2  # skip bottom border + shadow rows
-    num_options = len(OPTION_SPECS)
-    options_panel_bottom = OPTIONS_PANEL_TOP + num_options + 2  # top border + header + N options + bottom border
+@component
+def App() -> Any:
+    return Box(
+        TitleBar(),
+        KeybindingsBar(),
+        SectionHeader(),
+        CredentialsPanel(),
+        SetupActionsPanel(),
+        InfoBar(),
+        Box(flex_grow=1), # Spacer
+        StatusBar(),
+        flex_direction="column", flex_grow=1, bg="blue"
+    )
 
-    # Top border
-    opt_label = f" Setup Actions "
-    opt_top = TL + opt_label + HLINE * max(0, _W - len(opt_label) - 1) + TR
-    _safe_addstr(stdscr, OPTIONS_PANEL_TOP, 0, opt_top, curses.color_pair(PAIR_BORDER))
-
-    # Options inside panel
-    for idx, (label, key, _) in enumerate(OPTION_SPECS):
-        row = OPTIONS_PANEL_TOP + 1 + idx
-        marker = ">" if active_section == "options" and idx == selected_option else " "
-        checked = "x" if _workflow_value(options, key) else " "
-        line = f"{VLINE} {marker} [{checked}] {label}"
-
-        if active_section == "options" and idx == selected_option:
-            attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
-        else:
-            attr = curses.color_pair(PAIR_BG)
-
-        padded = line + " " * max(0, _W - len(line)) + VLINE
-        _safe_addstr(stdscr, row, 0, padded, attr)
-
-    # Bottom border + shadow
-    opt_btm = BL + HLINE * max(0, _W - 1) + BR
-    _safe_addstr(stdscr, options_panel_bottom, 0, opt_btm, curses.color_pair(PAIR_BORDER))
-    _fill_line(stdscr, options_panel_bottom + 1, 1, SHADOW_CH, curses.color_pair(PAIR_SHADOW) | curses.A_DIM)
-
-    #
-    # ── Layer 4: Info area (JDBC URI + Hint) ──
-    #
-    INFO_ROW = options_panel_bottom + 2
-    jdbc_uri = build_catalog_jdbc_uri(config.postgres_db, config.postgres_port)
-    _safe_addstr(stdscr, INFO_ROW, 0, f"  CATALOG_JDBC_URI (auto): {jdbc_uri}", curses.color_pair(PAIR_INFO))
-
-    if active_section == "fields":
-        help_text = FIELD_HELP[FIELD_SPECS[selected_field][1]]
-    else:
-        help_text = OPTION_SPECS[selected_option][2]
-    _safe_addstr(stdscr, INFO_ROW + 1, 0, f"  Hint: {help_text}", curses.color_pair(PAIR_INFO))
-
-    #
-    # ── Layer 5: Status bar (recessed — white on black) ──
-    #
-    STATUS_ROW = INFO_ROW + 3
-    _fill_bar(stdscr, STATUS_ROW, PAIR_STATUS)
-    if message:
-        _safe_addstr(stdscr, STATUS_ROW, 2, " Status: ", curses.color_pair(PAIR_STATUS) | curses.A_BOLD)
-        if "Cannot save" in message or "Error" in message:
-            _safe_addstr(stdscr, STATUS_ROW, 11, message, curses.color_pair(PAIR_ERROR) | curses.A_BOLD)
-        elif "Saved" in message or "Updated" in message or "Toggled" in message:
-            _safe_addstr(stdscr, STATUS_ROW, 11, message, curses.color_pair(PAIR_SUCCESS) | curses.A_BOLD)
-        else:
-            _safe_addstr(stdscr, STATUS_ROW, 11, message, curses.color_pair(PAIR_STATUS))
-    else:
-        _safe_addstr(stdscr, STATUS_ROW, 2, " Status: idle — navigate fields or press S to save", curses.color_pair(PAIR_STATUS))
-
-    stdscr.refresh()
-
-
-def _edit_selected(stdscr: Any, config: SetupConfig, selected: int) -> str:
-    label, key, _ = FIELD_SPECS[selected]
-    current = _cfg_value(config, key)
-    max_y, max_x = stdscr.getmaxyx()
-    prompt = f"{label} [{current}]: "
-
-    # Draw edit prompt on a highlighted bar at the bottom
-    _fill_bar(stdscr, max_y - 2, PAIR_SELECTED)
-    _safe_addstr(stdscr, max_y - 2, 0, " EDIT ", curses.color_pair(PAIR_SELECTED) | curses.A_BOLD)
-    _safe_addstr(stdscr, max_y - 2, 6, prompt, curses.color_pair(PAIR_SELECTED))
-    stdscr.move(max_y - 1, 0)
-    stdscr.clrtoeol()
-    _safe_addstr(stdscr, max_y - 1, 0, prompt, curses.color_pair(PAIR_SELECTED))
-    stdscr.refresh()
-
-    curses.echo()
-    curses.curs_set(1)
-    input_col = min(len(prompt), max(0, max_x - 2))
-    input_len = max(1, max_x - input_col - 1)
-    raw = stdscr.getstr(max_y - 1, input_col, input_len)
-    curses.curs_set(0)
-    curses.noecho()
-
-    value = raw.decode("utf-8").strip()
-    if value:
-        _set_cfg_value(config, key, value)
-        return f"Updated {label}"
-    return "No change"
-
-
-def _run_curses_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
-    if curses is None:
-        return 2
-
-    save_message = ""
+async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
+    # Initialize signals from config
+    for _, key, _ in FIELD_SPECS:
+        field_values[key] = Signal(_cfg_value(config, key), name=f"field_{key}")
+        
+    for _, key, _ in OPTION_SPECS:
+        option_values[key] = Signal(_workflow_value(options, key), name=f"opt_{key}")
+        
     saved = False
-
-    def _main(stdscr: Any) -> None:
-        nonlocal save_message
+    background_tasks: set[asyncio.Task[Any]] = set()
+    
+    def on_key(event: KeyEvent) -> None:
         nonlocal saved
-        active_section = "fields"
-        selected_field = 0
-        selected_option = 0
-        curses.curs_set(0)
-
-        # Initialize colors
-        curses.start_color()
-        curses.use_default_colors()
-        # Color pairs organized by depth layer (back-to-front)
-        curses.init_pair(PAIR_SHADOW, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Deepest: shadow
-        curses.init_pair(PAIR_STATUS, curses.COLOR_WHITE, curses.COLOR_BLACK)  # Recessed: status bar
-        curses.init_pair(PAIR_BG, curses.COLOR_WHITE, curses.COLOR_BLUE)       # Main surface: content
-        curses.init_pair(PAIR_BORDER, curses.COLOR_BLUE, curses.COLOR_CYAN)    # Raised edge: border
-        curses.init_pair(PAIR_TITLE, curses.COLOR_BLACK, curses.COLOR_WHITE)   # Topmost: title bar
-        curses.init_pair(PAIR_SELECTED, curses.COLOR_BLACK, curses.COLOR_CYAN) # Button: raised/highlighted
-        curses.init_pair(PAIR_HEADER, curses.COLOR_CYAN, curses.COLOR_BLUE)    # Subtle: section headers
-        curses.init_pair(PAIR_SUCCESS, curses.COLOR_GREEN, curses.COLOR_BLUE)  # Feedback: success
-        curses.init_pair(PAIR_ERROR, curses.COLOR_RED, curses.COLOR_BLUE)      # Feedback: error
-        curses.init_pair(PAIR_INFO, curses.COLOR_YELLOW, curses.COLOR_BLUE)    # Subtle: hints
-
-        # Set the screen-wide background to dark blue
-        stdscr.bkgd(' ', curses.color_pair(PAIR_BG))
-
-        while True:
-            _draw_tui(
-                stdscr,
-                config,
-                options,
-                active_section,
-                selected_field,
-                selected_option,
-                save_message,
-            )
-            key = stdscr.getch()
-
-            if key in (ord("q"), ord("Q")):
+        
+        # If in edit mode, let Input handle its own keys, except Enter/Esc
+        if mode() == "edit":
+            if event.name == "enter":
+                mode.set("navigate")
+                status_message.set(f"Updated {FIELD_SPECS[selected_idx()][0]}")
+                status_is_success.set(True)
+                status_is_error.set(False)
                 return
-            if key in (9, curses.KEY_BTAB):
-                active_section = "options" if active_section == "fields" else "fields"
-                continue
-            if key in (curses.KEY_UP, ord("k"), ord("K")):
-                if active_section == "fields":
-                    selected_field = (selected_field - 1) % len(FIELD_SPECS)
-                else:
-                    selected_option = (selected_option - 1) % len(OPTION_SPECS)
-                continue
-            if key in (curses.KEY_DOWN, ord("j"), ord("J")):
-                if active_section == "fields":
-                    selected_field = (selected_field + 1) % len(FIELD_SPECS)
-                else:
-                    selected_option = (selected_option + 1) % len(OPTION_SPECS)
-                continue
-            if key in (10, 13, curses.KEY_ENTER):
-                if active_section == "fields":
-                    save_message = _edit_selected(stdscr, config, selected_field)
-                else:
-                    _, option_key, _ = OPTION_SPECS[selected_option]
-                    _toggle_workflow_option(options, option_key)
-                    save_message = f"Toggled: {OPTION_SPECS[selected_option][0]}"
-                continue
-            if key in (ord(" "),):
-                if active_section == "options":
-                    _, option_key, _ = OPTION_SPECS[selected_option]
-                    _toggle_workflow_option(options, option_key)
-                    save_message = f"Toggled: {OPTION_SPECS[selected_option][0]}"
-                continue
-            if key in (ord("s"), ord("S")):
-                errors = validate_config(config)
-                if errors:
-                    save_message = f"Cannot save: {errors[0]}"
-                    continue
-                write_env_file(ENV_PATH, ENV_TEMPLATE_PATH, as_env_mapping(config))
-                save_message = f"Saved configuration to {ENV_PATH}"
-                saved = True
+            if event.name == "escape":
+                # Cancel edit (would need to restore original value for true cancel, 
+                # but for now just exit edit mode)
+                mode.set("navigate")
                 return
+            return # Let Input handle it
+            
+        # Navigate mode keybindings
+        if event.name == "q":
+            use_renderer().stop()
+            return
+            
+        if event.name == "tab":
+            active_section.set("options" if active_section() == "fields" else "fields")
+            selected_idx.set(0)
+            return
+            
+        if event.name in ("up", "k"):
+            if active_section() == "fields":
+                selected_idx.set((selected_idx() - 1) % len(FIELD_SPECS))
+            else:
+                selected_idx.set((selected_idx() - 1) % len(OPTION_SPECS))
+            return
+            
+        if event.name in ("down", "j"):
+            if active_section() == "fields":
+                selected_idx.set((selected_idx() + 1) % len(FIELD_SPECS))
+            else:
+                selected_idx.set((selected_idx() + 1) % len(OPTION_SPECS))
+            return
+            
+        if event.name == "enter":
+            if active_section() == "fields":
+                mode.set("edit")
+            else:
+                key = OPTION_SPECS[selected_idx()][1]
+                option_values[key].set(not option_values[key]())
+                status_message.set(f"Toggled: {OPTION_SPECS[selected_idx()][0]}")
+                status_is_success.set(True)
+                status_is_error.set(False)
+            return
+            
+        if event.name == " ":
+            if active_section() == "options":
+                key = OPTION_SPECS[selected_idx()][1]
+                option_values[key].set(not option_values[key]())
+                status_message.set(f"Toggled: {OPTION_SPECS[selected_idx()][0]}")
+                status_is_success.set(True)
+                status_is_error.set(False)
+            return
+            
+        if event.name == "s":
+            # Sync signals back to config for validation/saving
+            for _, key, _ in FIELD_SPECS:
+                _set_cfg_value(config, key, field_values[key]())
+            for _, key, _ in OPTION_SPECS:
+                setattr(options, key, option_values[key]())
+                
+            errors = validate_config(config)
+            if errors:
+                status_message.set(f"Cannot save: {errors[0]}")
+                status_is_error.set(True)
+                status_is_success.set(False)
+                return
+                
+            write_env_file(ENV_PATH, ENV_TEMPLATE_PATH, as_env_mapping(config))
+            status_message.set(f"Saved configuration to {ENV_PATH}")
+            status_is_success.set(True)
+            status_is_error.set(False)
+            saved = True
+            
+            # Wait briefly to show success message before quitting
+            task = asyncio.create_task(_quit_after_delay())
+            background_tasks.add(task)
+            task.add_done_callback(background_tasks.discard)
+            return
+            
+    async def _quit_after_delay() -> None:
+        await asyncio.sleep(0.7)
+        use_renderer().stop()
 
-    curses.wrapper(_main)
+    use_keyboard(on_key)
+    # Render blocks until use_renderer().stop() is called
+    import sys
+    # Only render if we have a TTY, otherwise fallback happens in main()
+    if sys.stdout.isatty():
+        await render(App)
+    
     return 0 if saved else 1
 
 
@@ -754,9 +753,10 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     config = load_initial_config()
     options = SetupWorkflowOptions()
-    if curses is None or args.prompt:
+    import sys
+    if args.prompt or not sys.stdout.isatty():
         return _run_prompt_fallback(config)
-    status = _run_curses_tui(config, options)
+    status = asyncio.run(_run_tui(config, options))
     if status == 0:
         print("")
         print("\n".join(build_setup_guide(config, options)))
