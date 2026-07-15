@@ -583,7 +583,10 @@ def StatusBar() -> Any:
     )
 
 @component
-def App() -> Any:
+def App(on_key_handler: Any = None) -> Any:
+    if on_key_handler:
+        use_keyboard(on_key_handler)
+    
     return Box(
         TitleBar(),
         KeybindingsBar(),
@@ -704,7 +707,7 @@ async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
     import sys
     # Only render if we have a TTY, otherwise fallback happens in main()
     if sys.stdout.isatty():
-        await render(App)
+        await render(App(on_key_handler=on_key))
     
     return 0 if saved else 1
 
