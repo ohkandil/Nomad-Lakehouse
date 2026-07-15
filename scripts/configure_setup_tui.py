@@ -452,7 +452,7 @@ def SectionHeader() -> Any:
 
     return Box(
         Text(lambda: f"  {get_title()} ", fg=get_color, bg=get_bg, bold=True),  # type: ignore[arg-type]
-        border_bottom=True, border_color="blue", border_style="dashed", flex_grow=1
+        border_bottom=True, border_color="blue", border_style="single", flex_grow=1
     )
 
 @component
@@ -491,7 +491,7 @@ def CredentialsPanel() -> Any:
         # Edit mode display
         edit_box = Box(
             Text(f" > {label:<25} : ", fg="black", bg="cyan", bold=True),
-            Input(value=field_values[key], focused=True, bg="cyan", fg="black"),
+            Input(value=field_values[key], focused=True, background_color="cyan", fg="black"),
             flex_direction="row", bg="cyan", flex_grow=1, padding_left=1
         )
 
