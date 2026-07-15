@@ -10,8 +10,9 @@ name = "nomad-lakehouse"
 version = "0.1.0"
 description = "Linux-first local lakehouse on MinIO + Apache Iceberg"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
+  "opentui>=0.1.0",
   "pandas>=2.2.0,<3.0.0",
   "python-dotenv>=1.0.0,<2.0.0",
   "pydantic>=2.7.0,<3.0.0",
