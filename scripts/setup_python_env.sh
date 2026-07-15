@@ -13,13 +13,13 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 INSTALL_PROFILE="${INSTALL_PROFILE:-dev}"
 
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
-  echo "[python-setup] ${PYTHON_BIN} not found. Install Python 3.11+ and retry."
+  echo "[python-setup] ${PYTHON_BIN} not found. Install Python 3.12+ and retry."
   exit 1
 fi
 
 PY_VERSION="$(${PYTHON_BIN} -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 REQ_MAJOR=3
-REQ_MINOR=11
+REQ_MINOR=12
 
 if ! ${PYTHON_BIN} -c "import sys; sys.exit(0 if sys.version_info >= (${REQ_MAJOR}, ${REQ_MINOR}) else 1)"; then
   echo "[python-setup] Python ${REQ_MAJOR}.${REQ_MINOR}+ required. Found ${PY_VERSION}."

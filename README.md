@@ -81,11 +81,11 @@ Medallion (Bronze → Silver → Gold) data flow over MinIO + Apache Iceberg, qu
 git clone https://github.com/ohkandil/nomad-lakehouse nomad-lakehouse
 cd nomad-lakehouse
 cp .env.example .env
-python3 scripts/configure_setup_tui.py
 chmod +x scripts/*.sh
-sudo ./scripts/setup_minio.sh
 INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
+python3 scripts/configure_setup_tui.py
+sudo ./scripts/setup_minio.sh
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
