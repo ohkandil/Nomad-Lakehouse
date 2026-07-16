@@ -12,7 +12,7 @@ Local-first data lakehouse for Ubuntu servers and homelabs — with an interacti
 
 | Feature                               | What it does                                                                                                                                             |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **🖥️ Colored TUI Wizard**     | Interactive OpenTUI-based setup with reactive signals, flexbox layout, and keybindings — sets credentials, ports, and automation preferences in one session |
+| **🖥️ OpenTUI Wizard**         | Interactive OpenTUI-based setup with reactive signals, flexbox layout, and keybindings — sets credentials, ports, and automation preferences in one session |
 | **📊 Admin Dashboard**          | FastAPI dashboard with four views: Overview, Pipeline Health, Data Quality, and Security                                                                 |
 | **🪜 Stack Diagram**            | Architecture visualization showing the full lakehouse data flow from MinIO → Iceberg → DuckDB → Dashboard                                             |
 | **🔗 Catalog Validation**       | `create_bronze_tables.py` validates JDBC connectivity before writing, with rerunnable `CREATE OR REPLACE` semantics                                  |
@@ -241,7 +241,7 @@ PY
 ├── docker-compose.yml        # MinIO + PostgreSQL orchestration
 ├── pyproject.toml            # Python deps, tool config, metadata
 ├── scripts/
-│   ├── configure_setup_tui.py    # Colored interactive TUI wizard
+│   ├── configure_setup_tui.py    # OpenTUI-based interactive wizard
 │   ├── create_bronze_tables.py   # Bronze ingestion + contract
 │   ├── bronze_to_silver.py       # Silver transformation
 │   ├── silver_to_gold.py         # Gold aggregation

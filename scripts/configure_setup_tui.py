@@ -5,11 +5,21 @@ from __future__ import annotations
 import argparse
 import asyncio
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from opentui import Box, Input, Signal, Text, component, render, use_keyboard, use_renderer
+from opentui import (
+    Box,
+    Input,
+    Signal,
+    Text,
+    component,
+    render,
+    use_keyboard,
+    use_renderer,
+)
 from opentui.events import KeyEvent
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -297,28 +307,6 @@ def write_env_file(path: Path, template_path: Path, values: dict[str, str]) -> N
     path.write_text("\n".join(output_lines) + "\n", encoding="utf-8")
 
 
-def _display_value(value: str, is_secret: bool) -> str:
-    if not is_secret:
-        return value
-    return "*" * len(value) if value else "(empty)"
-
-
-def _cfg_value(config: SetupConfig, key: str) -> str:
-    return str(getattr(config, CONFIG_ATTRS_BY_KEY[key]))
-
-
-def _set_cfg_value(config: SetupConfig, key: str, value: str) -> None:
-    setattr(config, CONFIG_ATTRS_BY_KEY[key], value)
-
-
-def _workflow_value(options: SetupWorkflowOptions, key: str) -> bool:
-    return bool(getattr(options, key))
-
-
-def _toggle_workflow_option(options: SetupWorkflowOptions, key: str) -> None:
-    setattr(options, key, not _workflow_value(options, key))
-
-
 def build_setup_guide(config: SetupConfig, options: SetupWorkflowOptions) -> list[str]:
     lines: list[str] = [
         "Setup complete! Follow this guided checklist:",
@@ -405,156 +393,324 @@ def build_setup_guide(config: SetupConfig, options: SetupWorkflowOptions) -> lis
 # OpenTUI Components & State
 # ==============================================================================
 
+FIELD_KEYS: tuple[str, ...] = tuple(key for _, key, _ in FIELD_SPECS)
+OPTION_KEYS: tuple[str, ...] = tuple(key for _, key, _ in OPTION_SPECS)
+
 active_section = Signal("fields", name="active_section")
 selected_idx = Signal(0, name="selected_idx")
 mode = Signal("navigate", name="mode")
-status_message = Signal("idle — navigate fields or press S to save", name="status_message")
-status_is_error = Signal(False, name="status_is_error")
-status_is_success = Signal(False, name="status_is_success")
+editing_field = Signal(-1, name="editing_field")
+editing_original_value = Signal("", name="editing_original_value")
+status_message = Signal(
+    "Idle - navigate fields or press S to save",
+    name="status_message",
+)
+status_kind = Signal("idle", name="status_kind")
 
 field_values: dict[str, Any] = {}
 option_values: dict[str, Any] = {}
 
-def get_status_color() -> str:
-    if status_is_error():
-        return "red"
-    if status_is_success():
-        return "green"
-    return "white"
+
+def _field_values_from_config(config: SetupConfig) -> dict[str, str]:
+    return {key: str(getattr(config, CONFIG_ATTRS_BY_KEY[key])) for key in FIELD_KEYS}
+
+
+def _option_values_from_options(options: SetupWorkflowOptions) -> dict[str, bool]:
+    return {key: bool(getattr(options, key)) for key in OPTION_KEYS}
+
+
+def _apply_field_values(config: SetupConfig, values: Mapping[str, str]) -> None:
+    for key in FIELD_KEYS:
+        setattr(config, CONFIG_ATTRS_BY_KEY[key], values[key])
+
+
+def _apply_option_values(options: SetupWorkflowOptions, values: Mapping[str, bool]) -> None:
+    for key in OPTION_KEYS:
+        setattr(options, key, values[key])
+
+
+def _status_color() -> str:
+    return {
+        "error": "red",
+        "success": "green",
+        "info": "yellow",
+        "idle": "white",
+    }.get(status_kind(), "white")
+
+
+def _set_status(message: str, kind: str = "idle") -> None:
+    status_message.set(message)
+    status_kind.set(kind)
+
+
+def _reactive(value: object) -> Any:
+    return value
+
+
+def _display_field_value(key: str, value: str, is_secret: bool) -> str:
+    if not is_secret:
+        return value
+    return "*" * len(value) if value else "(empty)"
+
 
 @component
 def TitleBar() -> Any:
     return Box(
-        Text(" NOMAD LAKEHOUSE FIRST-SETUP WIZARD ", fg="white", bg="blue", bold=True),
+        Text(
+            " NOMAD LAKEHOUSE FIRST-SETUP WIZARD ",
+            fg="black",
+            bg="cyan",
+            bold=True,
+        ),
         border_bottom=True,
-        border_style="double",
         border_color="cyan",
-        flex_grow=1,
-        padding_left=2,
-        padding_top=1
+        padding_bottom=1,
     )
+
 
 @component
 def KeybindingsBar() -> Any:
-    return Box(
-        Text(
-            " Tab switch section  ↑/↓ move  Enter edit  Space toggle  S save  Q quit", 
-            fg="yellow"
-        ),
-        padding_top=1
-    )
+    def binding_text() -> str:
+        if mode() == "edit":
+            return "Edit: Esc cancel  Enter save field  Tab next field  S save  Q quit"
+        if active_section() == "fields":
+            return (
+                "Navigate: Tab switch section  Up/Down or j/k move  Enter edit  "
+                "S save  Q quit"
+            )
+        return (
+            "Navigate: Tab switch section  Up/Down or j/k move  Enter toggle  "
+            "Space toggle  S save  Q quit"
+        )
+
+    return Box(Text(binding_text, fg="yellow"), padding_top=1)
+
 
 @component
 def SectionHeader() -> Any:
-    def get_title() -> str:
-        return "CREDENTIALS & SERVICES" if active_section() == "fields" else "SETUP PREFERENCES"
-    
-    def get_color() -> str:
-        return "cyan" if active_section() == "fields" else "white"
-    
-    def get_bg() -> str:
-        return "black"
+    def header_text() -> str:
+        return (
+            "CREDENTIALS & SERVICES"
+            if active_section() == "fields"
+            else "SETUP PREFERENCES"
+        )
+
+    def header_color() -> str:
+        return "cyan" if active_section() == "fields" else "magenta"
 
     return Box(
-        Text(lambda: f"  {get_title()} ", fg=get_color, bg=get_bg, bold=True),
-        border_bottom=True, border_color="blue", border_style="single", flex_grow=1, padding_top=1
+        Text(lambda: f" {header_text()} ", fg=_reactive(header_color), bold=True),
+        border_bottom=True,
+        border_color="blue",
+        padding_top=1,
     )
+
+
+@component
+def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
+    def is_selected() -> bool:
+        return active_section() == "fields" and selected_idx() == index
+
+    def is_editing() -> bool:
+        return mode() == "edit" and editing_field() == index
+
+    def row_background() -> str:
+        if is_editing():
+            return "cyan"
+        if is_selected():
+            return "blue"
+        return "black"
+
+    def row_foreground() -> str:
+        if is_editing():
+            return "black"
+        if is_selected():
+            return "white"
+        return "cyan"
+
+    def marker() -> str:
+        return ">" if is_selected() or is_editing() else " "
+
+    def display_value() -> str:
+        return _display_field_value(key, field_values[key](), is_secret)
+
+    def render_display_row() -> Any:
+        return Box(
+            Text(
+                lambda: f" {marker()} {label:<24} : {display_value()}",
+                fg=_reactive(row_foreground),
+                bg=_reactive(row_background),
+                bold=True,
+            ),
+            flex_direction="row",
+            align_items="center",
+            bg=_reactive(row_background),
+            padding_left=1,
+            padding_right=1,
+        )
+
+    def render_edit_row() -> Any:
+        widget_holder: dict[str, Input] = {}
+
+        def commit_value() -> None:
+            widget = widget_holder["input"]
+            field_values[key].set(widget.value)
+
+        def finish_edit(message: str) -> None:
+            commit_value()
+            editing_field.set(-1)
+            mode.set("navigate")
+            editing_original_value.set("")
+            _set_status(message, "success")
+
+        def cancel_edit() -> None:
+            original = editing_original_value()
+            field_values[key].set(original)
+            editing_field.set(-1)
+            mode.set("navigate")
+            editing_original_value.set("")
+            _set_status(f"Canceled edit for {label}", "idle")
+
+        def move_to_next_field() -> None:
+            commit_value()
+            next_idx = (index + 1) % len(FIELD_SPECS)
+            next_key = FIELD_SPECS[next_idx][1]
+            selected_idx.set(next_idx)
+            active_section.set("fields")
+            editing_field.set(next_idx)
+            editing_original_value.set(field_values[next_key]())
+            mode.set("edit")
+            _set_status(f"Editing {FIELD_SPECS[next_idx][0]}", "info")
+
+        def on_key_down(event: KeyEvent) -> None:
+            key_name = event.name.lower()
+            if key_name == "tab":
+                move_to_next_field()
+                event.stop_propagation()
+                return
+            if key_name in {"return", "enter", "linefeed"}:
+                finish_edit(f"Updated {label}")
+                event.stop_propagation()
+                return
+            if key_name == "escape":
+                cancel_edit()
+                event.stop_propagation()
+                return
+
+            widget = widget_holder["input"]
+            if widget.handle_key(event):
+                field_values[key].set(widget.value)
+            event.stop_propagation()
+
+        input_widget = Input(
+            value=field_values[key](),
+            focused=True,
+            show_cursor=True,
+            background_color="cyan",
+            fg="black",
+            cursor_color="black",
+            on_key_down=on_key_down,
+            key=key,
+        )
+        widget_holder["input"] = input_widget
+        return Box(
+            Text(f" > {label:<24} : ", fg="black", bg="cyan", bold=True),
+            input_widget,
+            flex_direction="row",
+            align_items="center",
+            bg="cyan",
+            padding_left=1,
+            padding_right=1,
+        )
+
+    return Box(lambda: render_edit_row() if is_editing() else render_display_row(), key=key)
+
 
 @component
 def CredentialsPanel() -> Any:
-    def make_field_row(idx: int, label: str, key: str, is_secret: bool) -> Any:
-        def is_selected() -> bool:
-            return bool(active_section() == "fields" and selected_idx() == idx)
-            
-        def is_editing() -> bool:
-            return bool(is_selected() and mode() == "edit")
-        
-        def display_text() -> str:
-            val = field_values[key]()
-            if not is_secret:
-                return val
-            return "*" * len(val) if val else "(empty)"
-            
-        def get_fg() -> str:
-            return "black" if is_selected() else "cyan"
-            
-        def get_bg() -> str:
-            return "cyan" if is_selected() else "black"
-            
-        def get_marker() -> str:
-            return "▶" if is_selected() else " "
-
-        # Normal display
-        display_box = Box(
-            Text(
-                lambda: f" {get_marker()} {label:<25} : {display_text()}", 
-                fg=get_fg, bg=get_bg, bold=is_selected  # type: ignore[arg-type]
-            ),
-            bg=get_bg, flex_grow=1, padding_left=2  # type: ignore[arg-type]
-        )
-        
-        # Edit mode display
-        edit_box = Box(
-            Text(f" > {label:<25} : ", fg="black", bg="cyan", bold=True),
-            Input(value=field_values[key], focused=True, background_color="cyan", fg="black"),
-            flex_direction="row", bg="cyan", flex_grow=1, padding_left=1
-        )
-
-        return Box(lambda: edit_box if is_editing() else display_box)
-
-    rows = [
-        make_field_row(i, label, key, is_secret) 
-        for i, (label, key, is_secret) in enumerate(FIELD_SPECS)
-    ]
-    
     return Box(
-        *rows,
+        *[
+            FieldRow(i, label, key, is_secret)
+            for i, (label, key, is_secret) in enumerate(FIELD_SPECS)
+        ],
         title=" Credentials & Services ",
-        border=True, border_color="cyan", border_style="rounded", flex_grow=1, gap=0, margin_top=1
+        border=True,
+        border_color="cyan",
+        border_style="rounded",
+        flex_grow=2,
+        gap=1,
+        padding=1,
     )
+
+
+@component
+def OptionRow(index: int, label: str, key: str, description: str) -> Any:
+    def is_selected() -> bool:
+        return active_section() == "options" and selected_idx() == index
+
+    def row_background() -> str:
+        return "blue" if is_selected() else "black"
+
+    def row_foreground() -> str:
+        return "white" if is_selected() else "cyan"
+
+    def marker() -> str:
+        return ">" if is_selected() else " "
+
+    def checked() -> str:
+        return "[x]" if option_values[key]() else "[ ]"
+
+    def description_color() -> str:
+        return "white" if is_selected() else "gray"
+
+    return Box(
+        Text(
+            lambda: f" {marker()} {checked()} {label}",
+            fg=_reactive(row_foreground),
+            bg=_reactive(row_background),
+            bold=True,
+        ),
+        Text(
+            lambda: f"   {description}",
+            fg=_reactive(description_color),
+            bg=_reactive(row_background),
+        ),
+        flex_direction="column",
+        bg=_reactive(row_background),
+        padding_left=1,
+        padding_right=1,
+        padding_top=0,
+        padding_bottom=0,
+    )
+
 
 @component
 def SetupActionsPanel() -> Any:
-    def make_option_row(idx: int, label: str, key: str) -> Any:
-        def is_selected() -> bool:
-            return bool(active_section() == "options" and selected_idx() == idx)
-        
-        def get_checked() -> str:
-            return "x" if option_values[key]() else " "
-            
-        def get_fg() -> str:
-            return "black" if is_selected() else "cyan"
-            
-        def get_bg() -> str:
-            return "cyan" if is_selected() else "black"
-            
-        def get_marker() -> str:
-            return "▶" if is_selected() else " "
-
-        return Box(
-            Text(
-                lambda: f" {get_marker()} [{get_checked()}] {label}", 
-                fg=get_fg, bg=get_bg, bold=is_selected  # type: ignore[arg-type]
-            ),
-            bg=get_bg, flex_grow=1, padding_left=2  # type: ignore[arg-type]
-        )
-
-    rows = [make_option_row(i, label, key) for i, (label, key, _) in enumerate(OPTION_SPECS)]
-    
     return Box(
-        *rows,
+        *[
+            OptionRow(i, label, key, description)
+            for i, (label, key, description) in enumerate(OPTION_SPECS)
+        ],
         title=" Setup Actions ",
-        border=True, border_color="cyan", border_style="rounded", flex_grow=1, gap=0, margin_top=1
+        border=True,
+        border_color="cyan",
+        border_style="rounded",
+        flex_grow=1,
+        gap=1,
+        padding=1,
     )
+
 
 @component
 def InfoBar() -> Any:
-    def get_jdbc() -> str:
+    def jdbc_uri() -> str:
         db = field_values["POSTGRES_DB"]()
         port = field_values["POSTGRES_PORT"]()
         return build_catalog_jdbc_uri(db, port)
-        
-    def get_hint() -> str:
+
+    def hint() -> str:
+        if mode() == "edit":
+            return "Esc cancels the current field. Enter saves it. Tab advances to the next field."
         if active_section() == "fields":
             idx = selected_idx()
             if 0 <= idx < len(FIELD_SPECS):
@@ -566,166 +722,200 @@ def InfoBar() -> Any:
         return ""
 
     return Box(
-        Text(lambda: f"  CATALOG_JDBC_URI (auto): {get_jdbc()}", fg="yellow"),
-        Text(lambda: f"  Hint: {get_hint()}", fg="yellow"),
-        flex_direction="column", padding_top=1, padding_left=1
+        Text(lambda: f" CATALOG_JDBC_URI (auto): {jdbc_uri()}", fg="yellow"),
+        Text(lambda: f" Hint: {hint()}", fg="yellow"),
+        flex_direction="column",
+        padding_left=1,
+        padding_top=1,
     )
+
 
 @component
 def StatusBar() -> Any:
     def is_status_bold() -> bool:
-        return bool(status_is_error() or status_is_success())
-        
+        return status_kind() in {"error", "success"}
+
     return Box(
         Text(" Status: ", fg="white", bg="black", bold=True),
-        Text(status_message, fg=get_status_color, bg="black", bold=is_status_bold),  # type: ignore[arg-type]
-        flex_direction="row", bg="black", flex_grow=1, padding_left=2
+        Text(
+            lambda: status_message(),
+            fg=_reactive(_status_color),
+            bg="black",
+            bold=_reactive(is_status_bold),
+        ),
+        flex_direction="row",
+        bg="black",
+        padding_left=1,
     )
 
+
 @component
-def App(on_key_handler: Any = None) -> Any:
-    if on_key_handler:
-        use_keyboard(on_key_handler)
-    
+def App() -> Any:
     return Box(
         TitleBar(),
         KeybindingsBar(),
         SectionHeader(),
-        CredentialsPanel(),
-        SetupActionsPanel(),
+        Box(
+            CredentialsPanel(),
+            SetupActionsPanel(),
+            flex_direction="row",
+            align_items="stretch",
+            gap=2,
+            flex_grow=1,
+        ),
         InfoBar(),
-        Box(flex_grow=1), # Spacer
         StatusBar(),
-        flex_direction="column", flex_grow=1, bg="black"
+        flex_direction="column",
+        gap=1,
+        flex_grow=1,
+        bg="black",
+        padding=1,
     )
 
-async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
-    # Initialize signals from config
+
+def _reset_tui_state() -> None:
+    active_section.set("fields")
+    selected_idx.set(0)
+    mode.set("navigate")
+    editing_field.set(-1)
+    editing_original_value.set("")
+    _set_status("Idle - navigate fields or press S to save", "idle")
+    field_values.clear()
+    option_values.clear()
+
+
+def _initialise_tui_state(config: SetupConfig, options: SetupWorkflowOptions) -> None:
+    _reset_tui_state()
     for _, key, _ in FIELD_SPECS:
-        field_values[key] = Signal(_cfg_value(config, key), name=f"field_{key}")
-        
+        field_values[key] = Signal(
+            str(getattr(config, CONFIG_ATTRS_BY_KEY[key])),
+            name=f"field_{key}",
+        )
     for _, key, _ in OPTION_SPECS:
-        option_values[key] = Signal(_workflow_value(options, key), name=f"opt_{key}")
-        
+        option_values[key] = Signal(bool(getattr(options, key)), name=f"opt_{key}")
+
+
+async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
+    _initialise_tui_state(config, options)
     saved = False
-    background_tasks: set[asyncio.Task[Any]] = set()
-    
+    pending_tasks: set[asyncio.Task[Any]] = set()
+
+    def _schedule_stop(delay: float = 0.6) -> None:
+        renderer = use_renderer()
+
+        async def _stop_later() -> None:
+            await asyncio.sleep(delay)
+            renderer.stop()
+
+        task = asyncio.create_task(_stop_later())
+        pending_tasks.add(task)
+        task.add_done_callback(pending_tasks.discard)
+
+    def _commit_state() -> None:
+        _apply_field_values(
+            config,
+            {key: field_values[key]() for key in FIELD_KEYS},
+        )
+        _apply_option_values(
+            options,
+            {key: option_values[key]() for key in OPTION_KEYS},
+        )
+
     def on_key(event: KeyEvent) -> None:
         nonlocal saved
-        
-        # If in edit mode, let Input handle its own keys, except Enter/Esc
+
+        if saved:
+            return
+
+        key_name = event.name.lower()
+
         if mode() == "edit":
-            if event.name == "enter":
-                mode.set("navigate")
-                status_message.set(f"Updated {FIELD_SPECS[selected_idx()][0]}")
-                status_is_success.set(True)
-                status_is_error.set(False)
-                return
-            if event.name == "escape":
-                # Cancel edit (would need to restore original value for true cancel, 
-                # but for now just exit edit mode)
-                mode.set("navigate")
-                return
-            return # Let Input handle it
-            
-        # Navigate mode keybindings
-        if event.name == "q":
+            return
+
+        if key_name == "q":
             use_renderer().stop()
             return
-            
-        if event.name == "tab":
-            active_section.set("options" if active_section() == "fields" else "fields")
-            selected_idx.set(0)
+
+        if key_name == "tab":
+            if active_section() == "fields":
+                active_section.set("options")
+                selected_idx.set(0)
+            else:
+                active_section.set("fields")
+                selected_idx.set(0)
+            _set_status(
+                "Switched to "
+                + ("credentials" if active_section() == "fields" else "setup preferences"),
+                "idle",
+            )
             return
-            
-        if event.name in ("up", "k"):
+
+        if key_name in {"up", "k"}:
             if active_section() == "fields":
                 selected_idx.set((selected_idx() - 1) % len(FIELD_SPECS))
             else:
                 selected_idx.set((selected_idx() - 1) % len(OPTION_SPECS))
             return
-            
-        if event.name in ("down", "j"):
+
+        if key_name in {"down", "j"}:
             if active_section() == "fields":
                 selected_idx.set((selected_idx() + 1) % len(FIELD_SPECS))
             else:
                 selected_idx.set((selected_idx() + 1) % len(OPTION_SPECS))
             return
-            
-        if event.name == "enter":
+
+        if key_name in {"return", "enter", "linefeed"}:
             if active_section() == "fields":
+                idx = selected_idx()
+                editing_field.set(idx)
+                editing_original_value.set(field_values[FIELD_SPECS[idx][1]]())
                 mode.set("edit")
+                _set_status(f"Editing {FIELD_SPECS[idx][0]}", "info")
             else:
-                key = OPTION_SPECS[selected_idx()][1]
+                label, key, _ = OPTION_SPECS[selected_idx()]
                 option_values[key].set(not option_values[key]())
-                status_message.set(f"Toggled: {OPTION_SPECS[selected_idx()][0]}")
-                status_is_success.set(True)
-                status_is_error.set(False)
+                _set_status(f"Toggled {label}", "success")
             return
-            
-        if event.name == " ":
+
+        if key_name in {" ", "space"}:
             if active_section() == "options":
-                key = OPTION_SPECS[selected_idx()][1]
+                label, key, _ = OPTION_SPECS[selected_idx()]
                 option_values[key].set(not option_values[key]())
-                status_message.set(f"Toggled: {OPTION_SPECS[selected_idx()][0]}")
-                status_is_success.set(True)
-                status_is_error.set(False)
+                _set_status(f"Toggled {label}", "success")
             return
-            
-        if event.name == "s":
-            # Sync signals back to config for validation/saving
-            for _, key, _ in FIELD_SPECS:
-                _set_cfg_value(config, key, field_values[key]())
-            for _, key, _ in OPTION_SPECS:
-                setattr(options, key, option_values[key]())
-                
+
+        if key_name == "s":
+            _commit_state()
             errors = validate_config(config)
             if errors:
-                status_message.set(f"Cannot save: {errors[0]}")
-                status_is_error.set(True)
-                status_is_success.set(False)
+                _set_status(f"Cannot save: {errors[0]}", "error")
                 return
-                
+
             write_env_file(ENV_PATH, ENV_TEMPLATE_PATH, as_env_mapping(config))
-            status_message.set(f"Saved configuration to {ENV_PATH}")
-            status_is_success.set(True)
-            status_is_error.set(False)
+            _set_status(f"Saved configuration to {ENV_PATH}", "success")
             saved = True
-            
-            # Wait briefly to show success message before quitting
-            task = asyncio.create_task(_quit_after_delay())
-            background_tasks.add(task)
-            task.add_done_callback(background_tasks.discard)
+            _schedule_stop()
             return
-            
-    async def _quit_after_delay() -> None:
-        await asyncio.sleep(0.7)
-        use_renderer().stop()
 
     use_keyboard(on_key)
-    # Render blocks until use_renderer().stop() is called
-    import sys
-    # Only render if we have a TTY, otherwise fallback happens in main()
-    if sys.stdout.isatty():
-        await render(App(on_key_handler=on_key))
-    
+    await render(App)
     return 0 if saved else 1
 
 
 def _run_prompt_fallback(config: SetupConfig) -> int:
     options = SetupWorkflowOptions()
-    print("TUI is unavailable; using prompt wizard mode instead.")
-    print("Press Enter to keep current value.")
+    print("Using prompt wizard mode instead.")
+    print("Press Enter to keep the current value.")
 
     for label, key, _ in FIELD_SPECS:
-        current = _cfg_value(config, key)
+        current = getattr(config, CONFIG_ATTRS_BY_KEY[key])
         entered = input(f"{label} [{current}]: ").strip()
         if entered:
-            _set_cfg_value(config, key, entered)
+            setattr(config, CONFIG_ATTRS_BY_KEY[key], entered)
 
     print("\nChoose first-setup actions:")
     for label, key, _ in OPTION_SPECS:
-        default_enabled = _workflow_value(options, key)
+        default_enabled = bool(getattr(options, key))
         default_marker = "Y/n" if default_enabled else "y/N"
         raw = input(f"{label}? [{default_marker}]: ").strip().lower()
         if raw in {"y", "yes"}:
@@ -752,7 +942,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--prompt",
         action="store_true",
-        help="Use prompt-mode wizard even when curses is available.",
+        help="Use prompt-mode wizard even when OpenTUI is available.",
     )
     return parser.parse_args(argv)
 
@@ -762,8 +952,10 @@ def main(argv: list[str] | None = None) -> int:
     config = load_initial_config()
     options = SetupWorkflowOptions()
     import sys
+
     if args.prompt or not sys.stdout.isatty():
         return _run_prompt_fallback(config)
+
     status = asyncio.run(_run_tui(config, options))
     if status == 0:
         print("")

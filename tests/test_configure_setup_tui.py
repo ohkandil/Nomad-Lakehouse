@@ -3,8 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from scripts.configure_setup_tui import (
+    FIELD_SPECS,
+    OPTION_SPECS,
     SetupConfig,
     SetupWorkflowOptions,
+    _apply_field_values,
+    _apply_option_values,
     as_env_mapping,
     build_setup_guide,
     parse_env_file,
@@ -49,6 +53,43 @@ def test_as_env_mapping_sets_catalog_uri_from_postgres_db_and_port() -> None:
     assert values["CATALOG_JDBC_URI"] == "jdbc:postgresql://localhost:15432/catalog"
     assert values["DASHBOARD_AUTH_PASSWORD"] == "this-is-a-strong-password"
     assert values["DASHBOARD_UPSTREAM"] == "127.0.0.1:8088"
+
+
+def test_apply_field_and_option_values_update_models() -> None:
+    config = SetupConfig(
+        minio_root_user="admin",
+        minio_root_password="0123456789abcdef",
+        minio_api_port="9000",
+        minio_console_port="9001",
+        warehouse_bucket="warehouse",
+        postgres_db="catalog",
+        postgres_user="iceberg",
+        postgres_password="abcdefghijklmnop",
+        postgres_port="15432",
+        aws_region="us-east-1",
+        dashboard_domain="dashboard.home.arpa",
+        dashboard_auth_user="admin",
+        dashboard_auth_password="this-is-a-strong-password",
+        dashboard_upstream="127.0.0.1:8088",
+        dashboard_allowed_cidrs="192.168.0.0/16 10.0.0.0/8",
+    )
+    options = SetupWorkflowOptions()
+
+    updated_fields = {
+        key: f"updated-{index}"
+        for index, (_, key, _) in enumerate(FIELD_SPECS)
+    }
+    updated_options = {
+        key: index % 2 == 0 for index, (_, key, _) in enumerate(OPTION_SPECS)
+    }
+
+    _apply_field_values(config, updated_fields)
+    _apply_option_values(options, updated_options)
+
+    assert config.minio_root_user == "updated-0"
+    assert config.dashboard_allowed_cidrs == f"updated-{len(FIELD_SPECS) - 1}"
+    assert options.start_stack_now is True
+    assert options.setup_python_env_now is False
 
 
 def test_validate_config_rejects_invalid_port_and_weak_password() -> None:
