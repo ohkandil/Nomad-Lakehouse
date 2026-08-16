@@ -14,8 +14,8 @@ Local-first data lakehouse for Ubuntu servers and homelabs — with an interacti
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **🖥️ OpenTUI Wizard**         | Interactive OpenTUI-based setup with reactive signals, flexbox layout, and keybindings — sets credentials, ports, and automation preferences in one session |
 | **📊 Admin Dashboard**          | FastAPI dashboard with four views: Overview, Pipeline Health, Data Quality, and Security                                                                 |
-| **🪜 Stack Diagram**            | Architecture visualization showing the full lakehouse data flow from MinIO → Iceberg → DuckDB → Dashboard                                             |
-| **🔗 Catalog Validation**       | `create_bronze_tables.py` validates JDBC connectivity before writing, with rerunnable `CREATE OR REPLACE` semantics                                  |
+| **🪜 Stack Diagram**            | Architecture visualization showing the data flow from MinIO → DuckDB (Iceberg-ready) → Dashboard                                             |
+| **🔗 Catalog Validation**       | `create_bronze_tables.py` validates JDBC connectivity to PostgreSQL catalog before writing, with rerunnable `CREATE OR REPLACE` semantics                                  |
 | **📑 Contract-First Ingestion** | Schema and constraints exported as a versioned JSON contract (`data/contracts/bronze_orders_contract.json`)                                            |
 | **🧪 Security Gate**            | Automated pipeline with`pip-audit`, Bandit, and remediation scripts                                                                                    |
 

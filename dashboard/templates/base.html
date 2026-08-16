@@ -1,35 +1,113 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Nomad Admin Dashboard - {{ title }}</title>
-    <link rel="stylesheet" href="/static/dashboard.css" />
-  </head>
-  <body data-endpoint="{{ api_endpoint }}">
-    <header class="hero">
-      <div class="hero-glow"></div>
-      <h1>Nomad Lakehouse Admin</h1>
-      <p>Operational health and medallion pipeline visibility</p>
-    </header>
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nomad Lakehouse Admin - {{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.css" rel="stylesheet" />
+    <style>
+        [x-cloak] { display: none !important; }
+        .gradient-bg {
+            background: radial-gradient(circle at top center, rgba(30, 41, 59, 1) 0%, rgba(2, 6, 23, 1) 100%);
+        }
+        .card-glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+    </style>
+</head>
+<body class="h-full font-sans text-slate-200 gradient-bg selection:bg-indigo-500/30">
+    <div class="min-h-full">
+        <!-- Navigation -->
+        <nav class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex h-16 items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 flex items-center gap-2">
+                            <div class="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <span class="text-xl font-bold tracking-tight text-white">Nomad <span class="text-indigo-400">Lakehouse</span></span>
+                        </div>
+                        <div class="hidden md:block">
+                            <div class="ml-10 flex items-baseline space-x-4">
+                                <a href="/" class="rounded-md px-3 py-2 text-sm font-medium {% if request.url.path == '/' %}bg-slate-800 text-white shadow-inner{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %} transition-all duration-200">Overview</a>
+                                <a href="/pipeline" class="rounded-md px-3 py-2 text-sm font-medium {% if request.url.path == '/pipeline' %}bg-slate-800 text-white shadow-inner{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %} transition-all duration-200">Pipeline</a>
+                                <a href="/quality" class="rounded-md px-3 py-2 text-sm font-medium {% if request.url.path == '/quality' %}bg-slate-800 text-white shadow-inner{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %} transition-all duration-200">Quality</a>
+                                <a href="/security" class="rounded-md px-3 py-2 text-sm font-medium {% if request.url.path == '/security' %}bg-slate-800 text-white shadow-inner{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %} transition-all duration-200">Security</a>
+                                <a href="/config" class="rounded-md px-3 py-2 text-sm font-medium {% if request.url.path == '/config' %}bg-slate-800 text-white shadow-inner{% else %}text-slate-400 hover:bg-slate-800 hover:text-white{% endif %} transition-all duration-200">Configuration</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        {% if user %}
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-medium text-slate-400 hidden sm:block">{{ user.email }}</span>
+                            <form action="/auth/logout" method="post" class="m-0">
+                                <button type="submit" class="rounded-lg bg-slate-800/50 p-2 text-slate-400 hover:bg-red-900/20 hover:text-red-400 transition-all border border-slate-700/50">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
 
-    <nav class="nav-tabs">
-      <a href="/" class="tab {% if request.url.path == '/' %}active{% endif %}">Overview</a>
-      <a href="/pipeline" class="tab {% if request.url.path == '/pipeline' %}active{% endif %}">Pipeline</a>
-      <a href="/quality" class="tab {% if request.url.path == '/quality' %}active{% endif %}">Quality</a>
-      <a href="/security" class="tab {% if request.url.path == '/security' %}active{% endif %}">Security</a>
-      <a href="/config" class="tab {% if request.url.path == '/config' %}active{% endif %}">Configuration</a>
-    </nav>
+        <header class="py-10">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="flex items-end justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight text-white">{{ title }}</h1>
+                        <p class="mt-2 text-sm text-slate-400">Operational health and medallion pipeline visibility for your homelab.</p>
+                    </div>
+                    <div id="status-indicator" hx-get="/api/status/overview" hx-trigger="load, every 30s" hx-target="this" hx-swap="innerHTML">
+                        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-slate-700">
+                            <div class="h-2 w-2 rounded-full bg-slate-500 animate-pulse"></div>
+                            <span class="text-xs font-medium text-slate-400 italic">Syncing...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
 
-    <main class="content">
-      {% block content %}{% endblock %}
-    </main>
+        <main>
+            <div class="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
 
-    <footer class="footer">
-      <span id="last-updated">Last updated: -</span>
-      <button id="refresh-btn" type="button">Refresh now</button>
-    </footer>
+        <footer class="mt-auto border-t border-slate-800 py-6 bg-slate-900/30">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+                <p class="text-sm text-slate-500">Nomad Lakehouse &copy; 2026. Made for local-first reliability.</p>
+                <div class="flex items-center gap-4">
+                    <span id="last-updated-time" class="text-xs text-slate-600 tabular-nums">Last Sync: -</span>
+                    <button 
+                        onclick="location.reload()" 
+                        class="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                        Force Refresh
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </div>
 
-    <script src="/static/dashboard.js"></script>
-  </body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
+    <script>
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            const now = new Date();
+            document.getElementById('last-updated-time').innerText = `Last Sync: ${now.toLocaleTimeString()}`;
+        });
+    </script>
+</body>
 </html>

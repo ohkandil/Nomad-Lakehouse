@@ -1,20 +1,117 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section>
-  <h2>Data Quality</h2>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Check</th>
-          <th>Status</th>
-          <th>Value</th>
-          <th>Detail</th>
-        </tr>
-      </thead>
-      <tbody id="quality-rows"></tbody>
-    </table>
-  </div>
-</section>
+<div class="space-y-6">
+    <!-- Quality Checks Grid -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {% for check in quality_checks %}
+        <div class="card-glass rounded-2xl p-6 relative overflow-hidden {% if check.status == 'ok' %}border-l-4 border-emerald-500{% elif check.status == 'warn' %}border-l-4 border-amber-500{% else %}border-l-4 border-red-500{% endif %}">
+            <div class="relative">
+                <h3 class="text-sm font-medium text-white truncate">{{ check.name }}</h3>
+                <div class="mt-4 flex items-center justify-between">
+                    <div class="text-4xl font-bold {% if check.status == 'ok' %}text-emerald-400{% elif check.status == 'warn' %}text-amber-400{% else %}text-red-400{% endif %}">
+                        {{ check.value }}
+                    </div>
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full {% if check.status == 'ok' %}bg-emerald-900/30 text-emerald-300{% elif check.status == 'warn' %}bg-amber-900/30 text-amber-300{% else %}bg-red-900/30 text-red-300{% endif %}">
+                        {{ check.status.toUpperCase() }}
+                    </span>
+                </div>
+                <p class="mt-2 text-xs text-slate-400 line-clamp-2">{{ check.detail }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Quality Checks Table -->
+    <div class="card-glass rounded-2xl overflow-hidden">
+        <div class="border-b border-slate-800 px-6 py-4">
+            <h2 class="text-lg font-semibold text-white">Quality Checks Detail</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-xs font-medium text-slate-400 uppercase tracking-wider bg-slate-900/50">
+                        <th class="px-6 py-3">Check</th>
+                        <th class="px-6 py-3">Status</th>
+                        <th class="px-6 py-3">Value</th>
+                        <th class="px-6 py-3">Detail</th>
+                    </tr>
+                </thead>
+                <tbody id="quality-table" class="divide-y divide-slate-800">
+                    {% for check in quality_checks %}
+                    <tr class="hover:bg-slate-800/50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-medium text-white">{{ check.name }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if check.status == 'ok' %}bg-emerald-900/30 text-emerald-300{% elif check.status == 'warn' %}bg-amber-900/30 text-amber-300{% else %}bg-red-900/30 text-red-300{% endif %}">
+                                {{ check.status.toUpperCase() }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-300 tabular-nums">
+                            {{ check.value }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-400 max-w-md truncate" title="{{ check.detail }}">
+                            {{ check.detail }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Data Freshness -->
+    <div class="card-glass rounded-2xl p-6">
+        <h2 class="text-lg font-semibold text-white mb-4">Data Freshness</h2>
+        <div class="grid gap-4 md:grid-cols-3">
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Bronze (DuckDB)</p>
+                <p class="text-lg font-mono text-white" id="freshness-bronze">Loading...</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Silver (CSV)</p>
+                <p class="text-lg font-mono text-white" id="freshness-silver">Loading...</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700">
+                <p class="text-xs text-slate-400 uppercase tracking-wider mb-1">Gold (CSV)</p>
+                <p class="text-lg font-mono text-white" id="freshness-gold">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Update freshness timestamps
+    function updateFreshness() {
+        {% for check in quality_checks %}
+        {% if 'Last Updated' in check.detail or 'last_updated' in check.detail.lower() %}
+        // Extract timestamps from quality checks
+        {% endif %}
+        {% endfor %}
+    }
+
+    // Load freshness from pipeline status
+    fetch('/api/status/pipeline')
+        .then(response => response.json())
+        .then(data => {
+            const stages = data.stages || [];
+            const bronze = stages.find(s => s.layer === 'bronze');
+            const silver = stages.find(s => s.layer === 'silver');
+            const gold = stages.find(s => s.layer === 'gold');
+
+            if (bronze) {
+                document.getElementById('freshness-bronze').innerText = bronze.last_updated || 'Never';
+            }
+            if (silver) {
+                document.getElementById('freshness-silver').innerText = silver.last_updated || 'Never';
+            }
+            if (gold) {
+                document.getElementById('freshness-gold').innerText = gold.last_updated || 'Never';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading freshness data:', error);
+        });
+</script>
 {% endblock %}

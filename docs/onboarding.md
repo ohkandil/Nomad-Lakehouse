@@ -9,9 +9,9 @@ Nomad Lakehouse is a lightweight, local-first data lakehouse implementation for 
 **Key Technologies:**
 
 - **Storage:** MinIO (S3-compatible object storage)
-- **Table Format:** Apache Iceberg
-- **Metadata Backend:** PostgreSQL (JDBC catalog)
-- **Query Engine:** DuckDB (local analytics)
+- **Table Format:** DuckDB (Iceberg-ready roadmap)
+- **Metadata Backend:** PostgreSQL (JDBC catalog validation)
+- **Query Engine:** DuckDB (local analytics and materialization)
 - **Orchestration:** Docker Compose
 - **Pipelines:** Python scripts for medallion layers (Bronze → Silver → Gold)
 
