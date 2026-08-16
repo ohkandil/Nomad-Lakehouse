@@ -17,7 +17,7 @@ if [[ ! -f .env ]]; then
     cp .env.example .env
 fi
 
-# 3. Interactive Setup Wizard (NPM-based TUI)
+# 3. Interactive Setup Wizard (npm-based TUI)
 echo "⚙️ Launching setup wizard..."
 cd tui
 npm install

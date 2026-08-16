@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/index.tsx",
+    "dev": "npx tsx src/index.tsx",
     "build": "tsc",
-    "start": "tsx src/index.tsx"
+    "start": "npx tsx src/index.tsx"
   },
   "dependencies": {
     "@opentui/core": "^0.5.3",
