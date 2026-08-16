@@ -8,28 +8,35 @@ Local-first data lakehouse for Ubuntu servers and homelabs — with an interacti
 
 ---
 
-## 🎬 What's New
+## 🚀 Quick Start
 
-| Feature                               | What it does                                                                                                                                             |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **🖥️ OpenTUI Wizard**         | Interactive OpenTUI-based setup with reactive signals, flexbox layout, and keybindings — sets credentials, ports, and automation preferences in one session |
-| **📊 Admin Dashboard**          | FastAPI dashboard with four views: Overview, Pipeline Health, Data Quality, and Security                                                                 |
-| **🪜 Stack Diagram**            | Architecture visualization showing the data flow from MinIO → DuckDB (Iceberg-ready) → Dashboard                                             |
-| **🔗 Catalog Validation**       | `create_bronze_tables.py` validates JDBC connectivity to PostgreSQL catalog before writing, with rerunnable `CREATE OR REPLACE` semantics                                  |
-| **📑 Contract-First Ingestion** | Schema and constraints exported as a versioned JSON contract (`data/contracts/bronze_orders_contract.json`)                                            |
-| **🧪 Security Gate**            | Automated pipeline with`pip-audit`, Bandit, and remediation scripts                                                                                    |
+```bash
+# 1. Clone the repository
+git clone https://github.com/ohkandil/nomad-lakehouse nomad-lakehouse
+cd nomad-lakehouse
+
+# 2. Run the bootstrap script (Ubuntu)
+chmod +x scripts/*.sh
+./scripts/bootstrap.sh
+```
+
+The bootstrap script will:
+- Install system dependencies (Docker, Node.js, Python)
+- Launch the **npm-based Setup Wizard** for environment configuration
+- Start core services (MinIO, PostgreSQL)
+- Prepare the Python lakehouse environment
 
 ---
 
-## 📸 Screenshots
+## 🖥️ Setup Wizard (npm)
 
-### Setup Wizard TUI
+The new setup wizard is built with TypeScript and managed via npm. It provides a guided interface to configure your `.env` file, ports, and credentials.
 
-<p align="center">
- <img src="docs/assets/tui-screenshot.png" alt="Nomad Lakehouse Setup TUI — interactive configuration wizard with colored panels and depth effects" width="640">
-</p>
-
-The first-setup wizard walks you through credentials, ports, and automation preferences with real-time validation. Use **Tab** to switch between sections, arrow keys to navigate, **Enter** to edit, and **S** to save.
+```bash
+cd tui
+npm install
+npm start
+```
 
 ### Admin Dashboard
 

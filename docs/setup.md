@@ -12,19 +12,11 @@
 ```bash
 git clone <repo-url> nomad-lakehouse
 cd nomad-lakehouse
-cp .env.example .env
-python3 scripts/configure_setup_tui.py
 chmod +x scripts/*.sh
+./scripts/bootstrap.sh
 ```
 
-The setup TUI writes `.env`, auto-generates `CATALOG_JDBC_URI` from the selected PostgreSQL database and port,
-and includes dashboard reverse-proxy defaults (`DASHBOARD_*`).
-It also provides setup-preference toggles and prints a guided checklist for stack bootstrapping and dashboard access.
-You can still edit `.env` manually and rotate at least:
-
-- `MINIO_ROOT_PASSWORD`
-- `POSTGRES_PASSWORD`
-- `DASHBOARD_AUTH_PASSWORD`
+The bootstrap script automates environment configuration, launches the TUI setup wizard, starts core Docker services, and prepares the Python environment.
 
 ## Start Services
 
