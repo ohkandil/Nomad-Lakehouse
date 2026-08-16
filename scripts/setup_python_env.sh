@@ -19,7 +19,7 @@ fi
 
 PY_VERSION="$(${PYTHON_BIN} -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 REQ_MAJOR=3
-REQ_MINOR=12
+REQ_MINOR=11
 
 if ! ${PYTHON_BIN} -c "import sys; sys.exit(0 if sys.version_info >= (${REQ_MAJOR}, ${REQ_MINOR}) else 1)"; then
   echo "[python-setup] Python ${REQ_MAJOR}.${REQ_MINOR}+ required. Found ${PY_VERSION}."
