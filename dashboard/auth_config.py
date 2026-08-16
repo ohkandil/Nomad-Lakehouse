@@ -1,15 +1,12 @@
 from __future__ import annotations
 
 from fastapi_users import FastAPIUsers
-from fastapi_users.authentication import Transport, AuthenticationStrategy
+from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTableUUID
-from sqlalchemy import String, Integer
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String
+from sqlalchemy.orm import Mapped, mapped_column
 
-from dashboard.models import Base
-from dashboard.health_sources import collect_overview_status
-from dashboard.pipeline_sources import collect_pipeline_status, collect_quality_status
-from dashboard.security_sources import collect_security_status
+from dashboard.database import Base
 
 
 class User(SQLAlchemyBaseUserTableUUID, Base):
@@ -25,20 +22,24 @@ class User(SQLAlchemyBaseUserTableUUID, Base):
 # Simple in-memory auth for demo (use real auth in production)
 SECRET_KEY = "your-secret-key-change-in-production"
 
+# Define JWT strategy
+def get_jwt_strategy() -> JWTStrategy:
+    return JWTStrategy(secret=SECRET_KEY, lifetime_seconds=3600)
 
-# Mock transport (replace with JWT in production)
-class AuthTransport:
-    @staticmethod
-    def get_strategy():
-        return "simple"
+# Define transport
+bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
+# Define authentication backend
+auth_backend = AuthenticationBackend(
+    name="jwt",
+    transport=bearer_transport,
+    get_strategy=get_jwt_strategy,
+)
 
 # Define fastapi users instance
-from fastapi_users import FastAPIUsers
-
 fastapi_users = FastAPIUsers[User, str](
     lambda user: user.id,
-    [AuthTransport.get_strategy()],
+    [auth_backend],
 )
 
 get_current_user = fastapi_users.current_user()

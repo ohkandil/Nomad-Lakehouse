@@ -12,7 +12,6 @@ description = "Linux-first local lakehouse on MinIO + Apache Iceberg"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "opentui>=0.1.0",
   "pandas>=2.2.0,<3.0.0",
   "python-dotenv>=1.0.0,<2.0.0",
   "pydantic>=2.7.0,<3.0.0",
@@ -24,8 +23,10 @@ dependencies = [
   "fastapi-users[sqlalchemy]>=13.0.0",
   "sqlalchemy>=2.0.0",
   "alembic>=1.13.0",
+  "bcrypt>=4.0.0,<6.0.0",
   "passlib[bcrypt]>=1.7.4",
-  "python-jose[cryptography]>=3.3.0"
+  "python-jose[cryptography]>=3.3.0",
+  "itsdangerous>=2.0.0,<3.0.0"
 ]
 
 [project.optional-dependencies]

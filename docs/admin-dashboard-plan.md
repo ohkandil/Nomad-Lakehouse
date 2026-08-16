@@ -46,6 +46,7 @@ Recommended stack:
 1. Frontend: server-rendered Jinja templates with lightweight JS charts.
 1. Data source adapters: existing scripts and local artifacts (DuckDB, CSV, JSON, Docker status).
 1. Optional charting: Chart.js loaded locally.
+1. Authentication: JWT-based auth via fastapi-users with session middleware.
 
 Why this approach:
 

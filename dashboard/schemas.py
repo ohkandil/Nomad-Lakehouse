@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 
 
 class UserCreate(BaseModel):
@@ -20,7 +19,7 @@ class UserRead(BaseModel):
 
 class UserUpdate(BaseModel):
     """Schema for updating user data."""
-    email: Optional[EmailStr] = None
-    password: Optional[str] = None
-    is_active: Optional[bool] = None
-    is_superuser: Optional[bool] = None
+    email: EmailStr | None = None
+    password: str | None = None
+    is_active: bool | None = None
+    is_superuser: bool | None = None

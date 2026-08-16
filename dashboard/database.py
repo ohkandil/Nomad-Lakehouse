@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import create_engine, Column, Integer, Boolean, String
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 

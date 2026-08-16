@@ -26,9 +26,10 @@ The dashboard should expose these operator views:
 
 ## Runtime Architecture
 
-1. FastAPI app serves HTML and JSON status endpoints.
+1. FastAPI app serves server-rendered HTML pages for the four operator views.
 1. Source adapters collect status from local files and service checks.
-1. UI reads API payloads and renders cards/tables/charts.
+1. UI renders cards/tables/charts from the collected status payloads.
+1. Auth: HTTP Basic login page (demo: admin/admin) + JWT bearer tokens via fastapi-users; session cookie middleware protects `/`.
  
 Suggested runtime command:
 
@@ -46,7 +47,9 @@ Implemented routes:
 ## Endpoint Reference
 
 1. `GET /`:
-   Overview dashboard page.
+   Overview dashboard page (redirects to `/login` if not authenticated).
+1. `GET /login`:
+   Login page with HTTP Basic auth (admin/admin for demo).
 1. `GET /pipeline`:
    Bronze/Silver/Gold health page.
 1. `GET /quality`:
@@ -54,13 +57,17 @@ Implemented routes:
 1. `GET /security`:
    Security and scan summary page.
 1. `GET /api/status/overview`:
-   JSON payload for service health.
+   **HTML page** for service health overview (server-rendered template).
 1. `GET /api/status/pipeline`:
-   JSON payload for medallion stage health.
+   **HTML page** for medallion stage health (server-rendered template).
 1. `GET /api/status/quality`:
-   JSON payload for quality/freshness checks.
+   **HTML page** for data quality checks (server-rendered template).
 1. `GET /api/status/security`:
-   JSON payload for scan summary.
+   **HTML page** for security scan summary (server-rendered template).
+1. `GET /health`:
+   JSON health check endpoint (`{"status": "ok"}`).
+1. `GET /auth/jwt/login`:
+   JWT token login endpoint (fastapi-users).
 
 ## Health Signal Definitions
 
@@ -124,7 +131,8 @@ sudo DASHBOARD_DOMAIN=dashboard.home.arpa \
 Verification:
 
 ```bash
-curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -fsS http://127.0.0.1:8088/health
+curl -fsS http://127.0.0.1:8088/api/status/overview   # returns HTML page
 curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
 ```
 
@@ -153,7 +161,8 @@ systemctl status --no-pager nomad-dashboard.service
 Verify:
 
 ```bash
-curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -fsS http://127.0.0.1:8088/health
+curl -fsS http://127.0.0.1:8088/api/status/overview   # returns HTML page
 curl -k -u <user>:<password> https://<dashboard-domain>/api/status/overview
 ```
 

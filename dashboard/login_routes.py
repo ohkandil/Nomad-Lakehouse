@@ -1,21 +1,14 @@
 from __future__ import annotations
 
-import os
-import subprocess
 from pathlib import Path
 
 import structlog
-from fastapi import APIRouter, Depends, Request, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from sqlalchemy.orm import Session
+from fastapi.templating import Jinja2Templates
 
-from dashboard.database import get_db
-from dashboard.models import User
-from dashboard.security import verify_password, get_password_hash
-from dashboard.health_sources import collect_overview_status
-from dashboard.pipeline_sources import collect_pipeline_status, collect_quality_status
-from dashboard.security_sources import collect_security_status
+from dashboard.auth_config import User
 
 # Initialize logger
 logger = structlog.get_logger()
@@ -23,9 +16,13 @@ logger = structlog.get_logger()
 router = APIRouter()
 security = HTTPBasic()
 
+# Templates
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
-def verify_admin(credentials: HTTPBasicCredentials | None = Depends(security)) -> User:
+
+def verify_admin(credentials: HTTPBasicCredentials | None) -> User:
     """Verify admin credentials."""
+    credentials = Depends(security)(credentials)
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -63,6 +60,7 @@ def login_page(request: Request) -> HTMLResponse:
 @router.post("/login")
 def login(credentials: HTTPBasicCredentials, request: Request):
     """Handle login."""
+    credentials = Depends(security)(credentials)
     user = verify_admin(credentials)
 
     # Create session (using simple session for demo)

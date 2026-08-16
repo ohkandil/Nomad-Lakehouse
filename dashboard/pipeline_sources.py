@@ -1,20 +1,32 @@
 from __future__ import annotations
 
 import subprocess
-import structlog
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal
-from datetime import UTC, datetime
 
 import pandas as pd
+import structlog
 
-from dashboard.models import PipelineStageStatus, PipelineStatus, QualityCheck, QualityStatus, SecurityStatus
-from dashboard.pipeline_sources import DUCKDB_PATH, SILVER_PATH, GOLD_PATH, CONTRACT_PATH
+from dashboard.models import (
+    DashboardHealthItem,
+    PipelineStageStatus,
+    PipelineStatus,
+    QualityCheck,
+    QualityStatus,
+    SecurityStatus,
+)
 
 # Initialize logger
 logger = structlog.get_logger()
 
 StatusLevel = Literal["ok", "warn", "fail", "unknown"]
+
+# Path constants
+DUCKDB_PATH = Path(__file__).parent.parent / "data" / "output" / "lakehouse.duckdb"
+SILVER_PATH = Path(__file__).parent.parent / "data" / "output" / "silver_orders.csv"
+GOLD_PATH = Path(__file__).parent.parent / "data" / "output" / "gold_daily_revenue.csv"
+CONTRACT_PATH = Path(__file__).parent.parent / "data" / "contracts" / "bronze_orders_contract.json"
 
 
 def utc_now_iso() -> str:
@@ -157,7 +169,11 @@ def collect_quality_status() -> QualityStatus:
             name="Ingestion Contract",
             status=contract_status,
             value="exists" if CONTRACT_PATH.exists() else "missing",
-            detail="Bronze orders contract JSON" if CONTRACT_PATH.exists() else "Contract not found",
+            detail=(
+                "Bronze orders contract JSON"
+                if CONTRACT_PATH.exists()
+                else "Contract not found"
+            ),
         )
     )
 
@@ -173,7 +189,7 @@ def collect_security_status() -> SecurityStatus:
         # Read security scan results if available
         report_path = Path(__file__).parent.parent / "data" / "output" / "security_report.txt"
         if report_path.exists():
-            with open(report_path, "r") as f:
+            with open(report_path) as f:
                 content = f.read()
             lines = content.split("\n")
             high_count = sum(1 for line in lines if "HIGH" in line or "CRITICAL" in line)
@@ -209,6 +225,7 @@ def collect_security_status() -> SecurityStatus:
 def collect_overview_status() -> dict:
     """Collect overall system health status."""
     try:
+        import os
         # Check MinIO
         minio_port = os.environ.get("MINIO_API_PORT", "9000")
         minio_health = subprocess.run(
@@ -224,17 +241,30 @@ def collect_overview_status() -> dict:
         # Check PostgreSQL
         postgres_user = os.environ.get("POSTGRES_USER", "iceberg")
         postgres_db = os.environ.get("POSTGRES_DB", "iceberg")
-        postgres_port = os.environ.get("POSTGRES_PORT", "5432")
+        _postgres_port = os.environ.get("POSTGRES_PORT", "5432")
 
         postgres_health = subprocess.run(
-            ["docker", "compose", "exec", "-T", "postgres", "pg_isready", "-U", postgres_user, "-d", postgres_db],
+            [
+                "docker",
+                "compose",
+                "exec",
+                "-T",
+                "postgres",
+                "pg_isready",
+                "-U",
+                postgres_user,
+                "-d",
+                postgres_db,
+            ],
             capture_output=True,
             text=True,
             timeout=5,
         )
 
         postgres_status = "ok" if postgres_health.returncode == 0 else "fail"
-        postgres_detail = "PostgreSQL is healthy" if postgres_status == "ok" else "PostgreSQL is unreachable"
+        postgres_detail = (
+            "PostgreSQL is healthy" if postgres_status == "ok" else "PostgreSQL is unreachable"
+        )
 
         # Collect pipeline status
         pipeline = collect_pipeline_status()
@@ -249,7 +279,13 @@ def collect_overview_status() -> dict:
         ]
 
         for stage in pipeline.stages:
-            items.append(DashboardHealthItem(name=f"Bronze ({stage.layer})", status=stage.status, detail=stage.detail))
+            items.append(
+                DashboardHealthItem(
+                    name=f"Bronze ({stage.layer})",
+                    status=stage.status,
+                    detail=stage.detail,
+                )
+            )
 
         return {
             "generated_at": utc_now_iso(),
@@ -271,8 +307,10 @@ def collect_overview_status() -> dict:
         }
 
 
-class DashboardHealthItem(BaseModel):
-    name: str
-    status: StatusLevel
-    detail: str
-    hint: str | None = None
+# This class is defined in dashboard.models, but we need it here for type hints
+# It's imported from dashboard.models in the imports section above
+# class DashboardHealthItem(BaseModel):
+#     name: str
+#     status: StatusLevel
+#     detail: str
+#     hint: str | None = None

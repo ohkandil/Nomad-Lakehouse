@@ -1,19 +1,24 @@
 from __future__ import annotations
 
-import subprocess
-import structlog
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import structlog
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
-from dashboard.database import get_db
+from dashboard.health_sources import collect_overview_status
+from dashboard.pipeline_sources import collect_pipeline_status, collect_quality_status
+from dashboard.security_sources import collect_security_status
 
 # Initialize logger
 logger = structlog.get_logger()
 
 router = APIRouter()
+
+# Templates
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
 
 class HealthResponse(BaseModel):

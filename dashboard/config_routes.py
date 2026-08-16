@@ -1,18 +1,12 @@
 from __future__ import annotations
 
-import os
 from pathlib import Path
+
 import structlog
-
-from fastapi import APIRouter, HTTPException, status, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Request
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-
-from dashboard.health_sources import collect_overview_status
-from dashboard.pipeline_sources import collect_pipeline_status, collect_quality_status
-from dashboard.security_sources import collect_security_status
+from pydantic import BaseModel
 
 # Initialize logger
 logger = structlog.get_logger()

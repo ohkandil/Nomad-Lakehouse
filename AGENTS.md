@@ -10,6 +10,7 @@ Local-first data lakehouse for Ubuntu servers and homelabs, implementing Bronze/
 |---|---|
 | `scripts/` | Pipeline Python scripts (`create_bronze_tables.py`, `bronze_to_silver.py`, `silver_to_gold.py`) and shell ops scripts (setup, health, security, systemd) |
 | `dashboard/` | FastAPI admin dashboard — `app.py` (router), `health_sources.py`, `pipeline_sources.py`, `security_sources.py`, `models.py`, Jinja2 templates, static JS/CSS |
+| `tui/` | TypeScript setup wizard (`src/App.tsx`, `src/index.tsx`) built on `@opentui/core` |
 | `tests/` | Unit tests; `conftest.py` adds repo root to `sys.path` |
 | `configs/` | Caddy reverse-proxy template and systemd service templates |
 | `data/contracts/` | JSON schema contracts (e.g., `bronze_orders_contract.json`) |

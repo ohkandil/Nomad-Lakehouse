@@ -14,6 +14,8 @@
 - Python scripts: Bronze/Silver/Gold pipeline steps with contract-first ingestion
 - DuckDB: Local analytics and Bronze/Silver/Gold table materialization
 - Docker Compose: Service orchestration on a single host
+- FastAPI dashboard: Four-view admin UI (overview / pipeline / quality / security) with JWT auth via fastapi-users and session middleware
+- Setup wizard (TypeScript + `@opentui`): interactive terminal configuration of `.env`
 
 ## Data Flow
 

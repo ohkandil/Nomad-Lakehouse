@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from dashboard.auth_config import User
 from dashboard.database import get_db
-from dashboard.models import User, Base
-from dashboard.schemas import UserCreate, UserRead
+from dashboard.schemas import UserRead
 from dashboard.security import get_password_hash
-from dashboard.auth_config import fastapi_users
+
+router = APIRouter()
 
 
 # Create initial admin user

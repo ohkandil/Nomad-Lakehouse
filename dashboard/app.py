@@ -1,27 +1,28 @@
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
 
-from dashboard.database import engine, Base, get_db, init_db
-from dashboard.models import User
-from dashboard.security import get_password_hash
+from dashboard.auth_config import User
 
 # Import all route modules
 from dashboard.auth_routes import router as auth_router
-from dashboard.login_routes import router as login_router
-from dashboard.status_routes import router as status_router
 from dashboard.config_routes import router as config_router
+from dashboard.database import get_db, init_db
+from dashboard.login_routes import router as login_router
+from dashboard.security import get_password_hash
+from dashboard.status_routes import router as status_router
 
 BASE_DIR = Path(__file__).resolve().parent
+
+SECRET_KEY = "your-secret-key-change-in-production"
 
 
 @asynccontextmanager
@@ -55,6 +56,9 @@ app = FastAPI(
     version="0.2.0",
     lifespan=lifespan
 )
+
+# Add session middleware
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Add CORS middleware
 app.add_middleware(

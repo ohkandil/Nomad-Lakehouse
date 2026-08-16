@@ -10,7 +10,10 @@
   "dependencies": {
     "@opentui/core": "^0.5.3",
     "@opentui/keymap": "^0.5.3",
-    "@opentui/react": "^0.5.3"
+    "@opentui/react": "^0.5.3",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.5",

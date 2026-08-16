@@ -14,11 +14,11 @@ if [[ ! -f .env ]]; then
   echo "[setup] .env not found. Copying from .env.example"
   cp .env.example .env
   if command -v python3 >/dev/null 2>&1 && [[ -t 0 && -t 1 ]]; then
-    echo "[setup] Launching interactive first-setup wizard"
-    python3 "${PROJECT_ROOT}/scripts/configure_setup_tui.py"
+    echo "[setup] Launching interactive first-setup wizard (npm-based TUI in tui/)"
+    (cd "${PROJECT_ROOT}/tui" && npm install && npm start)
   else
     echo "[setup] Missing interactive terminal for first setup."
-    echo "[setup] Run: python3 scripts/configure_setup_tui.py"
+    echo "[setup] Run: cd tui && npm install && npm start"
     exit 1
   fi
 fi

@@ -30,13 +30,15 @@ The bootstrap script will:
 
 ## 🖥️ Setup Wizard (npm)
 
-The new setup wizard is built with TypeScript and managed via npm. It provides a guided interface to configure your `.env` file, ports, and credentials.
+The setup wizard is a TypeScript/React application managed via npm in the `tui/` directory. It provides a guided terminal interface to configure your `.env` file, ports, and credentials.
 
 ```bash
 cd tui
 npm install
 npm start
 ```
+
+**Note:** The TUI requires native `@opentui` binaries. If you encounter issues with the native FFI, ensure you're running on a supported platform (Linux x64).
 
 ### Admin Dashboard
 
@@ -91,7 +93,8 @@ cp .env.example .env
 chmod +x scripts/*.sh
 INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
-python3 scripts/configure_setup_tui.py
+cd tui && npm install && npm start  # Interactive setup wizard (TypeScript + @opentui)
+cd ..
 sudo ./scripts/setup_minio.sh
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
@@ -100,7 +103,7 @@ python3 scripts/silver_to_gold.py
 
 ### What the TUI wizard sets up
 
-The first-setup wizard (`configure_setup_tui.py`) gives you an interactive OpenTUI terminal with:
+The setup wizard (`tui/`) is a TypeScript/React terminal application built on the `@opentui` library. It gives you an interactive terminal UI with:
 
 - ✏️ **15 configuration fields** — MinIO admin credentials, S3 ports, PostgreSQL connection, bucket name, AWS region, dashboard domain/auth/upstream/CIDRs
 - ⚙️ **6 setup actions** — toggle stack auto-start, Python environment creation, pipeline execution, dashboard service, and Caddy HTTPS proxy
@@ -122,7 +125,8 @@ python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 
 | Route         | View                                               |
 | ------------- | -------------------------------------------------- |
-| `/`         | Overview — service health at a glance             |
+| `/`         | Overview — service health at a glance (auth-gated) |
+| `/login`    | HTTP Basic auth login (admin/admin for demo)       |
 | `/pipeline` | Pipeline health — Bronze/Silver/Gold run status   |
 | `/quality`  | Data quality — contract adherence and row counts  |
 | `/security` | Security — audit results and vulnerability status |
@@ -152,7 +156,7 @@ All four dashboard views are served behind HTTPS with basic-auth credentials you
 - 📊 Four-view admin dashboard with API-driven status
 - 🔐 Security gate: `pip-audit`, Bandit, and remediation scripts
 - 🤖 CI pipeline with lint (Ruff), typing (mypy), tests (pytest), and security
-- 🎨 Interactive OpenTUI-based TUI with reactive layout
+- 🎨 Interactive terminal-based setup wizard (TypeScript + `@opentui`)
 
 ---
 
@@ -248,7 +252,6 @@ PY
 ├── docker-compose.yml        # MinIO + PostgreSQL orchestration
 ├── pyproject.toml            # Python deps, tool config, metadata
 ├── scripts/
-│   ├── configure_setup_tui.py    # OpenTUI-based interactive wizard
 │   ├── create_bronze_tables.py   # Bronze ingestion + contract
 │   ├── bronze_to_silver.py       # Silver transformation
 │   ├── silver_to_gold.py         # Gold aggregation
@@ -256,6 +259,9 @@ PY
 │   ├── setup_python_env.sh       # Virtual env creation
 │   ├── healthcheck.sh            # Service health probes
 │   └── security_scan.sh          # pip-audit + Bandit runner
+├── tui/
+│   ├── src/                      # TypeScript setup wizard source
+│   └── package.json              # npm deps (@opentui)
 ├── dashboard/
 │   ├── app.py                    # FastAPI application
 │   ├── health_sources.py         # Service health collectors

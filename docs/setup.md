@@ -16,7 +16,19 @@ chmod +x scripts/*.sh
 ./scripts/bootstrap.sh
 ```
 
-The bootstrap script automates environment configuration, launches the TUI setup wizard, starts core Docker services, and prepares the Python environment.
+The bootstrap script automates environment configuration, launches the **npm-based Setup Wizard** (in `tui/`) for environment configuration, starts core Docker services, and prepares the Python environment.
+
+## Setup Wizard (TUI)
+
+The setup wizard is a TypeScript/React application managed via npm in the `tui/` directory. It provides a guided terminal interface to configure your `.env` file, ports, and credentials.
+
+```bash
+cd tui
+npm install
+npm start
+```
+
+**Note:** The TUI requires native `@opentui` binaries. If you encounter issues with the native FFI, ensure you're running on a supported platform (Linux x64).
 
 ## Start Services
 
@@ -60,8 +72,9 @@ python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 Verify dashboard API:
 
 ```bash
-curl -fsS http://127.0.0.1:8088/api/status/overview
-curl -fsS http://127.0.0.1:8088/api/status/pipeline
+curl -fsS http://127.0.0.1:8088/health
+curl -fsS http://127.0.0.1:8088/api/status/overview   # returns HTML page
+curl -fsS http://127.0.0.1:8088/api/status/pipeline   # returns HTML page
 ```
 
 ## Secure LAN Dashboard Access (Reverse Proxy + TLS)

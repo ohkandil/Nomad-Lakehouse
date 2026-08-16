@@ -57,3 +57,10 @@ class SecurityStatus(BaseModel):
     report_path: str | None = None
     high_count: int | None = None
     critical_count: int | None = None
+
+
+class DashboardHealthItem(BaseModel):
+    name: str
+    status: StatusLevel
+    detail: str
+    hint: str | None = None

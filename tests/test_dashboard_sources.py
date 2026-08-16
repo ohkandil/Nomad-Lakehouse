@@ -32,30 +32,25 @@ def test_security_status_handles_missing_report() -> None:
 def test_overview_api_responds() -> None:
     response = client.get("/api/status/overview")
     assert response.status_code == 200
-    payload = response.json()
-    assert "overall_status" in payload
-    assert "items" in payload
+    assert response.headers["content-type"].startswith("text/html")
 
 
 def test_pipeline_api_responds() -> None:
     response = client.get("/api/status/pipeline")
     assert response.status_code == 200
-    payload = response.json()
-    assert "stages" in payload
+    assert response.headers["content-type"].startswith("text/html")
 
 
 def test_quality_api_responds() -> None:
     response = client.get("/api/status/quality")
     assert response.status_code == 200
-    payload = response.json()
-    assert "checks" in payload
+    assert response.headers["content-type"].startswith("text/html")
 
 
 def test_security_api_responds() -> None:
     response = client.get("/api/status/security")
     assert response.status_code == 200
-    payload = response.json()
-    assert "status" in payload
+    assert response.headers["content-type"].startswith("text/html")
 
 
 def test_security_report_parsing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
