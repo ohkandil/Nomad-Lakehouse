@@ -4,11 +4,13 @@ from pathlib import Path
 
 from scripts.configure_setup_tui import (
     FIELD_SPECS,
+    OPENTUI_AVAILABLE,
     OPTION_SPECS,
     SetupConfig,
     SetupWorkflowOptions,
     _apply_field_values,
     _apply_option_values,
+    _should_use_prompt_mode,
     as_env_mapping,
     build_setup_guide,
     parse_env_file,
@@ -198,3 +200,16 @@ def test_build_setup_guide_includes_https_access_when_proxy_enabled() -> None:
         "set -a; source .env; set +a; sudo -E ./scripts/install_dashboard_reverse_proxy.sh"
         in guide
     )
+
+
+def test_should_use_prompt_mode_respects_terminal_and_tui_availability(monkeypatch) -> None:
+    monkeypatch.setattr("scripts.configure_setup_tui.OPENTUI_AVAILABLE", True)
+    assert _should_use_prompt_mode(False, True) is False
+    assert _should_use_prompt_mode(True, True) is True
+    assert _should_use_prompt_mode(False, False) is True
+
+    monkeypatch.setattr("scripts.configure_setup_tui.OPENTUI_AVAILABLE", False)
+    assert _should_use_prompt_mode(False, True) is True
+
+    # reset to imported baseline to avoid cross-test surprises when tests are reordered
+    monkeypatch.setattr("scripts.configure_setup_tui.OPENTUI_AVAILABLE", OPENTUI_AVAILABLE)

@@ -4,23 +4,80 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import importlib
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Generic, ParamSpec, TypeVar, cast
 
-from opentui import (
-    Box,
-    Input,
-    Signal,
-    Text,
-    component,
-    render,
-    use_keyboard,
-    use_renderer,
-)
-from opentui.events import KeyEvent
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+_T = TypeVar("_T")
+
+try:
+    opentui_module = importlib.import_module("opentui")
+    events_module = importlib.import_module("opentui.events")
+
+    Box = opentui_module.Box
+    Input = opentui_module.Input
+    Signal = opentui_module.Signal
+    Text = opentui_module.Text
+    render = opentui_module.render
+    use_keyboard = opentui_module.use_keyboard
+    use_renderer = opentui_module.use_renderer
+    KeyEvent = events_module.KeyEvent
+    _component_impl = cast(Callable[[Callable[..., Any]], Any], opentui_module.component)
+    OPENTUI_AVAILABLE = True
+except ImportError:
+    OPENTUI_AVAILABLE = False
+
+    class _FallbackSignal(Generic[_T]):
+        def __init__(self, value: _T, name: str | None = None) -> None:
+            self._value = value
+            self.name = name
+
+        def __call__(self) -> _T:
+            return self._value
+
+        def set(self, value: _T) -> None:
+            self._value = value
+
+    class _FallbackKeyEvent:
+        name = ""
+
+        def stop_propagation(self) -> None:
+            return
+
+    class _OpenTUIMissing:
+        def __init__(self, *_args: object, **_kwargs: object) -> None:
+            msg = "OpenTUI is unavailable. Install Python 3.12+ and `pip install -e .[tui]`."
+            raise RuntimeError(msg)
+
+    Box = _OpenTUIMissing
+    Text = _OpenTUIMissing
+    Input = _OpenTUIMissing
+    Signal = _FallbackSignal
+    KeyEvent = _FallbackKeyEvent
+
+    async def render(*_args: object, **_kwargs: object) -> None:
+        msg = "OpenTUI is unavailable. Install Python 3.12+ and `pip install -e .[tui]`."
+        raise RuntimeError(msg)
+
+    def use_keyboard(*_args: object, **_kwargs: object) -> None:
+        msg = "OpenTUI is unavailable. Install Python 3.12+ and `pip install -e .[tui]`."
+        raise RuntimeError(msg)
+
+    def use_renderer(*_args: object, **_kwargs: object) -> Any:
+        msg = "OpenTUI is unavailable. Install Python 3.12+ and `pip install -e .[tui]`."
+        raise RuntimeError(msg)
+
+    def component(fn: Callable[_P, _R]) -> Callable[_P, _R]:
+        return fn
+else:
+
+    def component(fn: Callable[_P, _R]) -> Callable[_P, _R]:
+        return cast(Callable[_P, _R], _component_impl(fn))
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
@@ -550,7 +607,7 @@ def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
         )
 
     def render_edit_row() -> Any:
-        widget_holder: dict[str, Input] = {}
+        widget_holder: dict[str, Any] = {}
 
         def commit_value() -> None:
             widget = widget_holder["input"]
@@ -582,7 +639,7 @@ def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
             mode.set("edit")
             _set_status(f"Editing {FIELD_SPECS[next_idx][0]}", "info")
 
-        def on_key_down(event: KeyEvent) -> None:
+        def on_key_down(event: Any) -> None:
             key_name = event.name.lower()
             if key_name == "tab":
                 move_to_next_field()
@@ -821,7 +878,7 @@ async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
             {key: option_values[key]() for key in OPTION_KEYS},
         )
 
-    def on_key(event: KeyEvent) -> None:
+    def on_key(event: Any) -> None:
         nonlocal saved
 
         if saved:
@@ -947,13 +1004,19 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _should_use_prompt_mode(force_prompt: bool, stdout_isatty: bool) -> bool:
+    return force_prompt or not stdout_isatty or not OPENTUI_AVAILABLE
+
+
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
     config = load_initial_config()
     options = SetupWorkflowOptions()
     import sys
 
-    if args.prompt or not sys.stdout.isatty():
+    if _should_use_prompt_mode(args.prompt, sys.stdout.isatty()):
+        if not args.prompt and sys.stdout.isatty() and not OPENTUI_AVAILABLE:
+            print("OpenTUI not available; falling back to prompt wizard mode.")
         return _run_prompt_fallback(config)
 
     status = asyncio.run(_run_tui(config, options))
