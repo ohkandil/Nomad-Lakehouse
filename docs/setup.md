@@ -14,6 +14,7 @@ git clone <repo-url> nomad-lakehouse
 cd nomad-lakehouse
 cp .env.example .env
 python3 scripts/configure_setup_tui.py
+# Python 3.11 uses prompt fallback automatically; for OpenTUI on Python 3.12+: pip install -e .[tui]
 chmod +x scripts/*.sh
 ```
 

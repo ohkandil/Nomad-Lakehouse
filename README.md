@@ -102,6 +102,9 @@ The first-setup wizard (`configure_setup_tui.py`) gives you an interactive OpenT
 
 When you press **S** to save, the wizard writes `.env`, validates everything, and prints a guided post-save checklist tailored to your toggle selections.
 
+> [!NOTE]
+> OpenTUI currently publishes Python 3.12+ wheels. On Python 3.11, `configure_setup_tui.py` automatically falls back to prompt mode. To force-enable the OpenTUI experience on Python 3.12+, install `pip install -e .[tui]`.
+
 ---
 
 ## 📊 Dashboard

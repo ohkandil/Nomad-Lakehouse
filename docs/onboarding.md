@@ -38,6 +38,7 @@ cd nomad-lakehouse
 # 2. Configure environment
 cp .env.example .env
 python3 scripts/configure_setup_tui.py  # Interactive first-setup wizard
+# Python 3.11 uses prompt fallback automatically; for OpenTUI on Python 3.12+: pip install -e .[tui]
 
 # 3. Make scripts executable
 chmod +x scripts/*.sh
