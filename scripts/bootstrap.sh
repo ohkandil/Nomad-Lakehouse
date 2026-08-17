@@ -90,9 +90,11 @@ fi
 echo "⚙️ Launching setup wizard..."
 pushd "$TUI_DIR" >/dev/null
 
+export TERM="${TERM:-xterm-256color}"
+
 if [[ "$USE_BUN" -eq 1 ]]; then
     echo "Using Bun for OpenTUI"
-    rm -rf node_modules package-lock.json
+    rm -rf node_modules package-lock.json bun.lockb
     bun install
     bun run src/index.tsx
 else

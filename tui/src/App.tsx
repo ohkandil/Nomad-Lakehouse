@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useKeyboard } from '@opentui/react';
-import { createRoot } from '@opentui/react';
-import { createCliRenderer } from '@opentui/core';
 import { TextAttributes } from '@opentui/core';
 import type { InputRenderable } from '@opentui/core';
 
@@ -49,16 +47,16 @@ export const App = () => {
     const envContent = Object.entries(formData)
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
+
     console.log('Saving .env:', envContent);
     setStep('summary');
   };
 
   const handleFieldEnter = () => {
-    // Save current field value from input ref
     if (inputRef.current) {
       const actualValue = inputRef.current.value;
       const currentField = FIELD_SPECS[currentIndex];
-      setFormData(prev => ({...prev, [currentField.key]: actualValue}));
+      setFormData(prev => ({ ...prev, [currentField.key]: actualValue }));
     }
     handleNext();
   };
@@ -67,17 +65,18 @@ export const App = () => {
     if (event.name === 'q') {
       process.exit(0);
     }
+
     if (event.name === 'enter') {
       if (step === 'welcome') setStep('fields');
       else if (step === 'fields') handleFieldEnter();
       else if (step === 'options') handleSave();
     }
+
     if (event.name === 'backspace' && step === 'fields') {
-      // Save current field value before going back
       if (inputRef.current) {
         const actualValue = inputRef.current.value;
         const currentField = FIELD_SPECS[currentIndex];
-        setFormData(prev => ({...prev, [currentField.key]: actualValue}));
+        setFormData(prev => ({ ...prev, [currentField.key]: actualValue }));
       }
       handlePrev();
     }
@@ -86,12 +85,10 @@ export const App = () => {
   const currentField = FIELD_SPECS[currentIndex];
   const isSecure = currentField.secure;
 
-  // For secure fields, mask the value
-  const displayValue = isSecure 
-    ? '*'.repeat(formData[currentField.key]?.length || 0) 
+  const displayValue = isSecure
+    ? '*'.repeat(formData[currentField.key]?.length || 0)
     : (formData[currentField.key] || '');
 
-  // Focus the input when field step is active
   useEffect(() => {
     if (step === 'fields' && inputRef.current) {
       inputRef.current.focus();
@@ -100,8 +97,10 @@ export const App = () => {
 
   return (
     <box gap={1} border borderStyle="single" borderColor="blue">
-      <text fg="cyan" attributes={TextAttributes.BOLD}>Nomad Lakehouse Setup Wizard</text>
-      
+      <text fg="cyan" attributes={TextAttributes.BOLD}>
+        Nomad Lakehouse Setup Wizard
+      </text>
+
       {step === 'welcome' && (
         <box gap={1}>
           <text>Welcome to the Nomad Lakehouse setup!</text>
@@ -113,16 +112,16 @@ export const App = () => {
       {step === 'fields' && (
         <box gap={1}>
           <text fg="green">Step: {currentField.label}</text>
-          
+
           <box gap={1}>
             <text>{currentField.label}: </text>
-            <input 
+            <input
               ref={inputRef}
               value={displayValue}
               placeholder={currentField.secure ? "Enter password" : ""}
             />
           </box>
-          
+
           <text fg="gray">[Enter] Next | [Backspace] Prev | [q] Quit</text>
         </box>
       )}
@@ -145,16 +144,3 @@ export const App = () => {
     </box>
   );
 };
-
-async function start() {
-  try {
-    const renderer = await createCliRenderer();
-    const root = createRoot(renderer);
-    root.render(<App />);
-  } catch (error) {
-    console.error("Failed to start OpenTUI wizard:", error);
-    process.exit(1);
-  }
-}
-
-start();
