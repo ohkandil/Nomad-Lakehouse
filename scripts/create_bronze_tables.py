@@ -31,7 +31,21 @@ class JdbcTarget(BaseModel):
 
 
 def read_orders_csv(path: Path) -> list[BronzeOrder]:
-    required_columns = {"order_id", "customer_id", "order_date", "amount", "status"}
+    # Load contract
+    contract_path = Path("data/contracts/bronze_orders_contract.json")
+    if not contract_path.exists():
+        raise FileNotFoundError(f"Contract file not found: {contract_path}")
+
+    with contract_path.open("r", encoding="utf-8") as f:
+        contract = json.load(f)
+
+    # Validate contract structure
+    if not all(key in contract for key in ["required_columns", "dataset", "layer"]):
+        raise ValueError(f"Invalid contract structure: {contract_path}")
+
+    # Extract required columns from contract
+    contract_columns = {col["name"]: col for col in contract["required_columns"]}
+    required_columns = set(contract_columns.keys())
 
     rows: list[BronzeOrder] = []
     with path.open("r", encoding="utf-8", newline="") as f:
@@ -39,10 +53,19 @@ def read_orders_csv(path: Path) -> list[BronzeOrder]:
         if not reader.fieldnames:
             raise ValueError(f"CSV has no header row: {path}")
 
+        # Validate CSV headers against contract
         missing_columns = required_columns - set(reader.fieldnames)
         if missing_columns:
             missing = ", ".join(sorted(missing_columns))
             raise ValueError(f"CSV is missing required columns ({missing}): {path}")
+
+        # Validate CSV column types against contract
+        for col_name, col_def in contract_columns.items():
+            if col_def["type"] == "int" and not any(
+                field.lower() == col_name.lower() for field in reader.fieldnames
+            ):
+                raise ValueError(f"Column '{col_name}' must be of type 'int': {path}")
+            # Add more type checks here if needed (e.g., date, decimal, enum)
 
         for row_number, row in enumerate(reader, start=2):
             try:
