@@ -20,15 +20,31 @@ The bootstrap script automates environment configuration, launches the **npm-bas
 
 ## Setup Wizard (TUI)
 
-The setup wizard is a TypeScript/React application managed via npm in the `tui/` directory. It provides a guided terminal interface to configure your `.env` file, ports, and credentials.
+The setup wizard is a terminal-based configuration tool built with TypeScript, React, and [OpenTUI](https://github.com/opentui/core) v0.5+. It provides a guided interface to configure your `.env` file, ports, and credentials.
+
+### Quick Start
 
 ```bash
 cd tui
-npm install
-npm start
+bun install
+bun start
 ```
 
-**Note:** The TUI requires native `@opentui` binaries. If you encounter issues with the native FFI, ensure you're running on a supported platform (Linux x64).
+### Key Features
+
+- **Keyboard-driven navigation**: Use `Enter` to proceed, `Backspace` to go back, `q` to quit.
+- **Secure fields**: Passwords are masked during input.
+- **Validation**: Real-time validation for ports, required fields, and credentials.
+- **Persistence**: Saves progress automatically; resumes from last step if interrupted.
+- **Pre-fill**: Existing `.env` values are pre-filled if found.
+
+### Supported Platforms
+
+- Linux (x64/ARM64)
+- macOS (x64/ARM64)
+- Windows (WSL2 recommended)
+
+> **Note**: OpenTUI uses native bindings. Ensure your platform is supported by checking the [OpenTUI compatibility matrix](https://github.com/opentui/core#compatibility).
 
 ## Start Services
 
