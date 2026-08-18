@@ -5,7 +5,9 @@ import { App } from './App';
 
 async function start() {
   try {
-    const renderer = await createCliRenderer();
+    const renderer = await createCliRenderer({
+      exitOnCtrlC: false,
+    });
     const root = createRoot(renderer);
     root.render(<App />);
   } catch (error) {
