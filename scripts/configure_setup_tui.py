@@ -32,31 +32,31 @@ BUCKET_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])?$")
 REGION_RE = re.compile(r"^[a-z]{2}-[a-z]+-\d+$")
 DOMAIN_RE = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9.-]+(?<!-)$")
 
-FIELD_SPECS: tuple[tuple[str, str, bool], ...] = (
-    ("MinIO root user", "MINIO_ROOT_USER", False),
-    ("MinIO root password", "MINIO_ROOT_PASSWORD", True),
-    ("MinIO API port", "MINIO_API_PORT", False),
-    ("MinIO console port", "MINIO_CONSOLE_PORT", False),
-    ("Warehouse bucket", "WAREHOUSE_BUCKET", False),
-    ("Postgres DB", "POSTGRES_DB", False),
-    ("Postgres user", "POSTGRES_USER", False),
-    ("Postgres password", "POSTGRES_PASSWORD", True),
-    ("Postgres port", "POSTGRES_PORT", False),
-    ("AWS region", "AWS_REGION", False),
-    ("Dashboard domain", "DASHBOARD_DOMAIN", False),
-    ("Dashboard auth user", "DASHBOARD_AUTH_USER", False),
-    ("Dashboard auth password", "DASHBOARD_AUTH_PASSWORD", True),
-    ("Dashboard upstream", "DASHBOARD_UPSTREAM", False),
-    ("Dashboard allowed CIDRs", "DASHBOARD_ALLOWED_CIDRS", False),
+FIELD_SPECS: tuple[tuple[str, str, bool, bool], ...] = (
+    ("MinIO root user", "MINIO_ROOT_USER", False, False),
+    ("MinIO root password", "MINIO_ROOT_PASSWORD", True, False),
+    ("MinIO API port", "MINIO_API_PORT", False, True),
+    ("MinIO console port", "MINIO_CONSOLE_PORT", False, True),
+    ("Warehouse bucket", "WAREHOUSE_BUCKET", False, True),
+    ("Postgres DB", "POSTGRES_DB", False, True),
+    ("Postgres user", "POSTGRES_USER", False, True),
+    ("Postgres password", "POSTGRES_PASSWORD", True, False),
+    ("Postgres port", "POSTGRES_PORT", False, True),
+    ("AWS region", "AWS_REGION", False, True),
+    ("Dashboard domain", "DASHBOARD_DOMAIN", False, True),
+    ("Dashboard auth user", "DASHBOARD_AUTH_USER", False, False),
+    ("Dashboard auth password", "DASHBOARD_AUTH_PASSWORD", True, False),
+    ("Dashboard upstream", "DASHBOARD_UPSTREAM", False, True),
+    ("Dashboard allowed CIDRs", "DASHBOARD_ALLOWED_CIDRS", False, True),
 )
 
 FIELD_HELP: dict[str, str] = {
     "MINIO_ROOT_USER": "Admin username for MinIO object storage.",
     "MINIO_ROOT_PASSWORD": "Use 16+ chars. This secures your object storage API and console.",  # nosec
-    "MINIO_API_PORT": "MinIO S3 API port. Keep this open only where needed.",
-    "MINIO_CONSOLE_PORT": "MinIO web console port for local administration.",
-    "WAREHOUSE_BUCKET": "Main object storage bucket name for lakehouse data.",
-    "POSTGRES_DB": "PostgreSQL database used for metadata/catalog state.",
+    "MINIO_API_PORT": "MinIO S3 API port. Keep this open only on trusted networks.",
+    "MINIO_CONSOLE_PORT": "MinIO web console port.",
+    "WAREHOUSE_BUCKET": "S3 bucket name (lowercase, digits, hyphens only).",
+    "POSTGRES_DB": "PostgreSQL database for Iceberg catalog.",
     "POSTGRES_USER": "PostgreSQL user for catalog operations.",
     "POSTGRES_PASSWORD": "Use 16+ chars. Rotate before shared or production use.",  # nosec
     "POSTGRES_PORT": "PostgreSQL service port.",
@@ -393,19 +393,23 @@ def build_setup_guide(config: SetupConfig, options: SetupWorkflowOptions) -> lis
 # OpenTUI Components & State
 # ==============================================================================
 
-FIELD_KEYS: tuple[str, ...] = tuple(key for _, key, _ in FIELD_SPECS)
+FIELD_KEYS: tuple[str, ...] = tuple(key for _, key, _, _ in FIELD_SPECS)
 OPTION_KEYS: tuple[str, ...] = tuple(key for _, key, _ in OPTION_SPECS)
 
+# User experience mode: "basic" (guided, fewer fields) or "advanced" (full control)
+user_mode = Signal("basic", name="user_mode")
 active_section = Signal("fields", name="active_section")
 selected_idx = Signal(0, name="selected_idx")
 mode = Signal("navigate", name="mode")
 editing_field = Signal(-1, name="editing_field")
 editing_original_value = Signal("", name="editing_original_value")
 status_message = Signal(
-    "Idle - navigate fields or press S to save",
+    "Welcome! Configure your lakehouse. Press ? for help, M to switch mode, S to save.",
     name="status_message",
 )
-status_kind = Signal("idle", name="status_kind")
+status_kind = Signal("info", name="status_kind")
+show_help = Signal(False, name="show_help")
+show_review = Signal(False, name="show_review")
 
 field_values: dict[str, Any] = {}
 option_values: dict[str, Any] = {}
@@ -453,6 +457,67 @@ def _display_field_value(key: str, value: str, is_secret: bool) -> str:
     return "*" * len(value) if value else "(empty)"
 
 
+def visible_field_specs() -> list[tuple[str, str, bool, bool]]:
+    """Return the field specs visible for the current user mode.
+
+    In ``basic`` mode, advanced-only fields are hidden and keep their defaults.
+    In ``advanced`` mode every field is shown.
+    """
+    if user_mode() == "advanced":
+        return list(FIELD_SPECS)
+    return [spec for spec in FIELD_SPECS if not spec[3]]
+
+
+def field_error(key: str, value: str) -> str | None:
+    """Return a human-readable validation error for ``key`` given ``value``."""
+    if key in {
+        "MINIO_ROOT_USER",
+        "POSTGRES_DB",
+        "POSTGRES_USER",
+        "AWS_REGION",
+        "WAREHOUSE_BUCKET",
+        "DASHBOARD_DOMAIN",
+        "DASHBOARD_AUTH_USER",
+        "DASHBOARD_ALLOWED_CIDRS",
+    }:
+        if not value.strip():
+            return f"{key} cannot be empty"
+    if key in {"MINIO_ROOT_PASSWORD", "POSTGRES_PASSWORD", "DASHBOARD_AUTH_PASSWORD"}:
+        if len(value) < 16:
+            return "must be at least 16 characters"
+    if key == "WAREHOUSE_BUCKET" and value and not BUCKET_RE.match(value):
+        return "must match S3 naming (lowercase, digits, hyphens)"
+    if key == "AWS_REGION" and value and not REGION_RE.match(value):
+        return "must look like us-east-1"
+    if key == "DASHBOARD_DOMAIN" and value and not DOMAIN_RE.match(value):
+        return "must be a valid hostname"
+    if key == "DASHBOARD_UPSTREAM" and value:
+        match = UPSTREAM_RE.match(value)
+        if match is None:
+            return "must look like 127.0.0.1:8088"
+        port = int(match.group("port"))
+        if port < 1 or port > 65535:
+            return "port must be between 1 and 65535"
+    if key in {"MINIO_API_PORT", "MINIO_CONSOLE_PORT", "POSTGRES_PORT"} and value:
+        if not value.isdigit():
+            return "must be a number"
+        port = int(value)
+        if port < 1 or port > 65535:
+            return "must be between 1 and 65535"
+    return None
+
+
+def _configured_count() -> int:
+    specs = visible_field_specs()
+    count = 0
+    for label, key, is_secret, _ in specs:
+        value = field_values.get(key)
+        raw = value() if value is not None else ""
+        if field_error(key, raw) is None and raw.strip():
+            count += 1
+    return count
+
+
 @component
 def TitleBar() -> Any:
     return Box(
@@ -469,40 +534,67 @@ def TitleBar() -> Any:
 
 
 @component
-def KeybindingsBar() -> Any:
-    def binding_text() -> str:
-        if mode() == "edit":
-            return "Edit: Esc cancel  Enter save field  Tab next field  S save  Q quit"
-        if active_section() == "fields":
-            return (
-                "Navigate: Tab switch section  Up/Down or j/k move  Enter edit  "
-                "S save  Q quit"
-            )
+def ModeBar() -> Any:
+    def mode_label() -> str:
+        return "BASIC" if user_mode() == "basic" else "ADVANCED"
+
+    def mode_color() -> str:
+        return "green" if user_mode() == "basic" else "magenta"
+
+    def mode_hint() -> str:
         return (
-            "Navigate: Tab switch section  Up/Down or j/k move  Enter toggle  "
-            "Space toggle  S save  Q quit"
+            "Guided setup — only key credentials shown"
+            if user_mode() == "basic"
+            else "Full control — every setting is editable"
         )
 
-    return Box(Text(binding_text, fg="yellow"), padding_top=1)
+    total = len(visible_field_specs())
+    configured = _configured_count()
+
+    def progress_text() -> str:
+        pct = int((configured / total) * 100) if total else 100
+        return f" {configured}/{total} fields ready ({pct}%)"
+
+    return Box(
+        Text(
+            lambda: f" MODE: [{mode_label()}] ",
+            fg="black",
+            bg=_reactive(mode_color),
+            bold=True,
+        ),
+        Text(lambda: f"  {mode_hint()}", fg="gray"),
+        Text(lambda: progress_text(), fg="yellow", bold=True),
+        flex_direction="row",
+        align_items="center",
+        gap=2,
+        border_bottom=True,
+        border_color=_reactive(mode_color),
+        padding_top=1,
+        padding_bottom=1,
+    )
 
 
 @component
-def SectionHeader() -> Any:
-    def header_text() -> str:
-        return (
-            "CREDENTIALS & SERVICES"
-            if active_section() == "fields"
-            else "SETUP PREFERENCES"
+def Tabs() -> Any:
+    def tab(section: str, label: str) -> Any:
+        is_active = active_section() == section
+        return Box(
+            Text(
+                lambda: f" {label} " if is_active else f"  {label}  ",
+                fg="black" if is_active else "cyan",
+                bg="cyan" if is_active else "black",
+                bold=True,
+            ),
+            padding_left=2,
+            padding_right=2,
         )
 
-    def header_color() -> str:
-        return "cyan" if active_section() == "fields" else "magenta"
-
     return Box(
-        Text(lambda: f" {header_text()} ", fg=_reactive(header_color), bold=True),
-        border_bottom=True,
-        border_color="blue",
-        padding_top=1,
+        tab("fields", "Credentials & Services"),
+        tab("options", "Setup Preferences"),
+        flex_direction="row",
+        align_items="center",
+        gap=1,
     )
 
 
@@ -529,7 +621,23 @@ def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
         return "cyan"
 
     def marker() -> str:
-        return ">" if is_selected() or is_editing() else " "
+        return "▶" if is_selected() or is_editing() else " "
+
+    def validity_mark() -> str:
+        if is_editing():
+            return " "
+        err = field_error(key, field_values[key]())
+        if err is None and field_values[key]().strip():
+            return "✓"
+        return "✗"
+
+    def validity_color() -> str:
+        if is_editing():
+            return "black"
+        err = field_error(key, field_values[key]())
+        if err is None and field_values[key]().strip():
+            return "green"
+        return "red"
 
     def display_value() -> str:
         return _display_field_value(key, field_values[key](), is_secret)
@@ -537,7 +645,7 @@ def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
     def render_display_row() -> Any:
         return Box(
             Text(
-                lambda: f" {marker()} {label:<24} : {display_value()}",
+                lambda: f" {marker()} {validity_mark()} {label:<21} : {display_value()}",
                 fg=_reactive(row_foreground),
                 bg=_reactive(row_background),
                 bold=True,
@@ -573,14 +681,15 @@ def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
 
         def move_to_next_field() -> None:
             commit_value()
-            next_idx = (index + 1) % len(FIELD_SPECS)
-            next_key = FIELD_SPECS[next_idx][1]
+            specs = visible_field_specs()
+            next_idx = (index + 1) % len(specs)
+            next_key = specs[next_idx][1]
             selected_idx.set(next_idx)
             active_section.set("fields")
             editing_field.set(next_idx)
             editing_original_value.set(field_values[next_key]())
             mode.set("edit")
-            _set_status(f"Editing {FIELD_SPECS[next_idx][0]}", "info")
+            _set_status(f"Editing {specs[next_idx][0]}", "info")
 
         def on_key_down(event: KeyEvent) -> None:
             key_name = event.name.lower()
@@ -614,7 +723,12 @@ def FieldRow(index: int, label: str, key: str, is_secret: bool) -> Any:
         )
         widget_holder["input"] = input_widget
         return Box(
-            Text(f" > {label:<24} : ", fg="black", bg="cyan", bold=True),
+            Text(
+                lambda: f" {marker()} {validity_mark()} {label:<21} : ",
+                fg="black",
+                bg="cyan",
+                bold=True,
+            ),
             input_widget,
             flex_direction="row",
             align_items="center",
@@ -631,7 +745,7 @@ def CredentialsPanel() -> Any:
     return Box(
         *[
             FieldRow(i, label, key, is_secret)
-            for i, (label, key, is_secret) in enumerate(FIELD_SPECS)
+            for i, (label, key, is_secret, _) in enumerate(visible_field_specs())
         ],
         title=" Credentials & Services ",
         border=True,
@@ -713,8 +827,9 @@ def InfoBar() -> Any:
             return "Esc cancels the current field. Enter saves it. Tab advances to the next field."
         if active_section() == "fields":
             idx = selected_idx()
-            if 0 <= idx < len(FIELD_SPECS):
-                return FIELD_HELP[FIELD_SPECS[idx][1]]
+            specs = visible_field_specs()
+            if 0 <= idx < len(specs):
+                return FIELD_HELP[specs[idx][1]]
         else:
             idx = selected_idx()
             if 0 <= idx < len(OPTION_SPECS):
@@ -750,19 +865,119 @@ def StatusBar() -> Any:
 
 
 @component
-def App() -> Any:
+def HelpOverlay() -> Any:
+    rows = [
+        ("↑/k  ↓/j", "Move selection", "cyan"),
+        ("Tab", "Switch Credentials / Preferences", "cyan"),
+        ("Enter / Space", "Edit field / toggle option", "cyan"),
+        ("Esc", "Cancel edit / close overlay", "cyan"),
+        ("M", "Toggle Basic ⇄ Advanced mode", "magenta"),
+        ("R", "Review configuration", "yellow"),
+        ("?", "Show / hide this help", "yellow"),
+        ("S", "Save to .env", "green"),
+        ("Q", "Quit without saving", "red"),
+    ]
     return Box(
-        TitleBar(),
-        KeybindingsBar(),
-        SectionHeader(),
-        Box(
+        Text(" Keyboard Shortcuts & Modes ", fg="black", bg="cyan", bold=True),
+        *[
+            Box(
+                Text(f" {key:<14}", fg=color, bold=True),
+                Text(descr, fg="white"),
+                flex_direction="row",
+                gap=1,
+            )
+            for key, descr, color in rows
+        ],
+        Text(""),
+        Text(
+            " Basic mode shows only key credentials with secure defaults.",
+            fg="green",
+        ),
+        Text(
+            " Advanced mode exposes every port, CIDR and upstream setting.",
+            fg="magenta",
+        ),
+        title=" Help ",
+        border=True,
+        border_color="cyan",
+        border_style="rounded",
+        flex_grow=1,
+        padding=2,
+        gap=0,
+    )
+
+
+@component
+def ReviewOverlay() -> Any:
+    def config_lines() -> list[Any]:
+        lines: list[Any] = []
+        for label, key, is_secret, _ in visible_field_specs():
+            val = field_values[key]()
+            display = _display_field_value(key, val, is_secret)
+            err = field_error(key, val)
+            mark = "✓" if err is None and val.strip() else "✗"
+            color = "green" if err is None and val.strip() else "red"
+            lines.append(
+                Box(
+                    Text(f" {mark} {label:<22} : ", fg="white"),
+                    Text(display, fg=color, bold=True),
+                    flex_direction="row",
+                )
+            )
+        return lines
+
+    def option_lines() -> list[Any]:
+        lines: list[Any] = []
+        for label, key, _ in OPTION_SPECS:
+            checked = "[x]" if option_values[key]() else "[ ]"
+            lines.append(
+                Box(
+                    Text(f" {checked} {label}", fg="white"),
+                    flex_direction="row",
+                )
+            )
+        return lines
+
+    return Box(
+        Text(" Configuration Review ", fg="black", bg="cyan", bold=True),
+        Text(" Credentials & Services ", fg="cyan", bold=True),
+        *config_lines(),
+        Text(""),
+        Text(" Setup Preferences ", fg="magenta", bold=True),
+        *option_lines(),
+        Text(""),
+        Text(" Press R or Esc to return. Press S to save. ", fg="yellow", bold=True),
+        title=" Review ",
+        border=True,
+        border_color="cyan",
+        border_style="rounded",
+        flex_grow=1,
+        padding=2,
+        gap=0,
+    )
+
+
+@component
+def App() -> Any:
+    def body() -> Any:
+        if show_help():
+            return HelpOverlay()
+        if show_review():
+            return ReviewOverlay()
+        return Box(
             CredentialsPanel(),
             SetupActionsPanel(),
             flex_direction="row",
             align_items="stretch",
             gap=2,
             flex_grow=1,
-        ),
+        )
+
+    return Box(
+        TitleBar(),
+        ModeBar(),
+        Tabs(),
+        body(),
         InfoBar(),
         StatusBar(),
         flex_direction="column",
@@ -786,7 +1001,7 @@ def _reset_tui_state() -> None:
 
 def _initialise_tui_state(config: SetupConfig, options: SetupWorkflowOptions) -> None:
     _reset_tui_state()
-    for _, key, _ in FIELD_SPECS:
+    for _, key, _, _ in FIELD_SPECS:
         field_values[key] = Signal(
             str(getattr(config, CONFIG_ATTRS_BY_KEY[key])),
             name=f"field_{key}",
@@ -832,6 +1047,51 @@ async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
         if mode() == "edit":
             return
 
+        # Overlay handling
+        if show_help() or show_review():
+            if key_name == "s":
+                _commit_state()
+                errors = validate_config(config)
+                if errors:
+                    _set_status(f"Cannot save: {errors[0]}", "error")
+                    return
+                write_env_file(ENV_PATH, ENV_TEMPLATE_PATH, as_env_mapping(config))
+                _set_status(f"Saved configuration to {ENV_PATH}", "success")
+                saved = True
+                _schedule_stop()
+                return
+            if key_name in {"escape", "q"}:
+                show_help.set(False)
+                show_review.set(False)
+                _set_status("Resumed editing", "idle")
+            elif key_name in {"?", "h"}:
+                show_help.set(not show_help())
+            elif key_name == "r":
+                show_review.set(not show_review())
+                show_help.set(False)
+            return
+
+        if key_name == "m":
+            new_mode = "advanced" if user_mode() == "basic" else "basic"
+            user_mode.set(new_mode)
+            selected_idx.set(0)
+            _set_status(
+                "Switched to "
+                + ("Basic (guided) mode" if new_mode == "basic" else "Advanced mode"),
+                "info",
+            )
+            return
+
+        if key_name in {"?", "h"}:
+            show_help.set(True)
+            _set_status("Showing keyboard help. Press ? or Esc to close.", "info")
+            return
+
+        if key_name == "r":
+            show_review.set(True)
+            _set_status("Review your configuration. Press S to save, R/Esc to close.", "info")
+            return
+
         if key_name == "q":
             use_renderer().stop()
             return
@@ -839,10 +1099,9 @@ async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
         if key_name == "tab":
             if active_section() == "fields":
                 active_section.set("options")
-                selected_idx.set(0)
             else:
                 active_section.set("fields")
-                selected_idx.set(0)
+            selected_idx.set(0)
             _set_status(
                 "Switched to "
                 + ("credentials" if active_section() == "fields" else "setup preferences"),
@@ -852,25 +1111,26 @@ async def _run_tui(config: SetupConfig, options: SetupWorkflowOptions) -> int:
 
         if key_name in {"up", "k"}:
             if active_section() == "fields":
-                selected_idx.set((selected_idx() - 1) % len(FIELD_SPECS))
+                selected_idx.set((selected_idx() - 1) % len(visible_field_specs()))
             else:
                 selected_idx.set((selected_idx() - 1) % len(OPTION_SPECS))
             return
 
         if key_name in {"down", "j"}:
             if active_section() == "fields":
-                selected_idx.set((selected_idx() + 1) % len(FIELD_SPECS))
+                selected_idx.set((selected_idx() + 1) % len(visible_field_specs()))
             else:
                 selected_idx.set((selected_idx() + 1) % len(OPTION_SPECS))
             return
 
         if key_name in {"return", "enter", "linefeed"}:
             if active_section() == "fields":
+                specs = visible_field_specs()
                 idx = selected_idx()
                 editing_field.set(idx)
-                editing_original_value.set(field_values[FIELD_SPECS[idx][1]]())
+                editing_original_value.set(field_values[specs[idx][1]]())
                 mode.set("edit")
-                _set_status(f"Editing {FIELD_SPECS[idx][0]}", "info")
+                _set_status(f"Editing {specs[idx][0]}", "info")
             else:
                 label, key, _ = OPTION_SPECS[selected_idx()]
                 option_values[key].set(not option_values[key]())
@@ -907,7 +1167,7 @@ def _run_prompt_fallback(config: SetupConfig) -> int:
     print("Using prompt wizard mode instead.")
     print("Press Enter to keep the current value.")
 
-    for label, key, _ in FIELD_SPECS:
+    for label, key, _, _ in FIELD_SPECS:
         current = getattr(config, CONFIG_ATTRS_BY_KEY[key])
         entered = input(f"{label} [{current}]: ").strip()
         if entered:

@@ -72,6 +72,44 @@ Wizard note:
 
 - The setup wizard validates credentials/ports, supports dashboard auth configuration, and prints a post-save checklist for stack startup and secure dashboard access.
 
+## Interactive Setup Wizard (OpenTUI)
+
+The `configure_setup_tui.py` script provides a modern, keyboard-driven terminal interface for first-time configuration.
+
+### Key Features
+
+| Feature | Key | Description |
+| --------- | ----- | ------------- |
+| **Mode toggle** | `M` | Switch between **Basic** (guided, 5 key fields) and **Advanced** (all 15 fields) |
+| **Navigation** | `↑/k` `↓/j` | Move between fields/options |
+| **Section switch** | `Tab` | Toggle between Credentials & Setup Preferences |
+| **Edit field** | `Enter` | Enter edit mode for selected field |
+| **Toggle option** | `Space` | Toggle boolean setup actions |
+| **Help overlay** | `?` / `h` | Show keyboard shortcut reference |
+| **Review mode** | `R` | Review all settings before saving |
+| **Save** | `S` | Validate and write `.env` |
+| **Quit** | `Q` | Exit without saving |
+| **Cancel edit** | `Esc` | Cancel current field edit or close overlay |
+
+### Visual Indicators
+
+- **Progress bar** — Top bar shows `X/15 fields ready (YY%)`
+- **Field validity** — Each field displays ✓ (valid), ✗ (invalid), or empty (not set)
+- **Mode badge** — Top-right shows `[BASIC]` or `[ADVANCED]` with colored background
+- **Tabs** — Color-coded tabs for Credentials & Services / Setup Preferences
+- **Status bar** — Color-coded messages (green success, red error, yellow info)
+
+### Basic vs Advanced Mode
+
+| Mode | Fields Shown | Use Case |
+|------|--------------|----------|
+| **Basic** (default) | 5 essential credentials: MinIO user/password, Postgres password, Dashboard auth user/password | New users, quick setup, secure defaults for everything else |
+| **Advanced** | All 15 fields including ports, bucket name, Postgres DB/user/port, AWS region, dashboard domain/upstream/CIDRs | Experienced users, custom network topologies, non-standard ports |
+
+### Prompt Fallback
+
+If OpenTUI is unavailable or you pass `--prompt`, a simple text-mode wizard runs instead, prompting for each field sequentially.
+
 ## Architecture Overview
 
 ```
@@ -112,7 +150,7 @@ Wizard note:
 ## Key Files and Directories
 
 | Path | Purpose |
-|------|---------|
+| ------ | --------- |
 | `docker-compose.yml` | Service orchestration (MinIO + PostgreSQL) |
 | `.env.example` | Environment variable template |
 | `scripts/` | All automation and pipeline scripts |
@@ -174,7 +212,7 @@ pytest tests/ -v
 ### Common Issues and Solutions
 
 | Symptom | Likely Cause | Solution |
-|---------|--------------|----------|
+| --------- | -------------- | ---------- |
 | MinIO fails to start | Port conflict | Check if ports 9000/9001 are free |
 | PostgreSQL connection fails | Service not running | `sudo docker compose up -d postgres` |
 | Python module not found | Environment not activated | `source .venv/bin/activate` |

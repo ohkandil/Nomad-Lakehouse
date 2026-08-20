@@ -93,12 +93,14 @@ python3 scripts/silver_to_gold.py
 
 ### What the TUI wizard sets up
 
-The first-setup wizard (`configure_setup_tui.py`) gives you an interactive OpenTUI terminal with:
+The first-setup wizard (`configure_setup_tui.py`) gives you a modern, interactive OpenTUI terminal with:
 
-- ✏️ **15 configuration fields** — MinIO admin credentials, S3 ports, PostgreSQL connection, bucket name, AWS region, dashboard domain/auth/upstream/CIDRs
-- ⚙️ **6 setup actions** — toggle stack auto-start, Python environment creation, pipeline execution, dashboard service, and Caddy HTTPS proxy
-- ✅ **Inline validation** — password length, bucket naming, port conflicts, hostname format — all checked before saving
-- 🎨 **Depth-styled UI** — title bar, raised button highlights, bordered panels with shadows, and a recessed status bar with color-coded feedback (green success / red error)
+- 🧭 **Two experience modes** — Press `M` to switch between **Basic** (guided setup that shows only key credentials with secure defaults) and **Advanced** (full control over every port, CIDR, and upstream setting).
+- ✏️ **15 configuration fields** — MinIO admin credentials, S3 ports, PostgreSQL connection, bucket name, AWS region, dashboard domain/auth/upstream/CIDRs.
+- ⚙️ **6 setup actions** — toggle stack auto-start, Python environment creation, pipeline execution, dashboard service, and Caddy HTTPS proxy.
+- ✅ **Live validation** — each field shows a ✓/✗ marker; password length, bucket naming, port ranges, and hostname format are checked as you type. A top progress bar tracks how many required fields are ready.
+- 📖 **Help & review overlays** — Press `?` for a contextual shortcut cheat-sheet, or `R` to review every setting before saving.
+- 🎨 **Depth-styled UI** — title banner, mode indicator, tabbed sections, bordered panels, and a color-coded status bar (green success / red error / yellow info).
 
 When you press **S** to save, the wizard writes `.env`, validates everything, and prints a guided post-save checklist tailored to your toggle selections.
 
@@ -113,11 +115,11 @@ source .venv/bin/activate
 python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 ```
 
-| Route         | View                                               |
+| Route | View |
 | ------------- | -------------------------------------------------- |
-| `/`         | Overview — service health at a glance             |
-| `/pipeline` | Pipeline health — Bronze/Silver/Gold run status   |
-| `/quality`  | Data quality — contract adherence and row counts  |
+| `/` | Overview — service health at a glance |
+| `/pipeline` | Pipeline health — Bronze/Silver/Gold run status |
+| `/quality` | Data quality — contract adherence and row counts |
 | `/security` | Security — audit results and vulnerability status |
 
 ### Secure LAN access (Caddy + TLS + basic auth)

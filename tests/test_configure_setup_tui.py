@@ -77,7 +77,7 @@ def test_apply_field_and_option_values_update_models() -> None:
 
     updated_fields = {
         key: f"updated-{index}"
-        for index, (_, key, _) in enumerate(FIELD_SPECS)
+        for index, (_, key, _, _) in enumerate(FIELD_SPECS)
     }
     updated_options = {
         key: index % 2 == 0 for index, (_, key, _) in enumerate(OPTION_SPECS)

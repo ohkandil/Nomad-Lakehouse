@@ -17,9 +17,18 @@ python3 scripts/configure_setup_tui.py
 chmod +x scripts/*.sh
 ```
 
-The setup TUI writes `.env`, auto-generates `CATALOG_JDBC_URI` from the selected PostgreSQL database and port,
-and includes dashboard reverse-proxy defaults (`DASHBOARD_*`).
-It also provides setup-preference toggles and prints a guided checklist for stack bootstrapping and dashboard access.
+The interactive setup wizard (`configure_setup_tui.py`) features:
+
+- **Two experience modes**: Press `M` to toggle between **Basic** (guided, shows only key credentials with secure defaults) and **Advanced** (full control over every port, CIDR, and upstream setting).
+- **Live validation**: Fields show ✓/✗ markers indicating validity; passwords require 16+ characters; bucket names must match S3 conventions.
+- **Progress indicator**: Top bar shows how many required fields are configured.
+- **Keyboard-driven**: Navigate with `↑/k ↓/j`, switch sections with `Tab`, edit with `Enter`, toggle options with `Space`.
+- **Help overlay**: Press `?` for a contextual shortcut reference.
+- **Review mode**: Press `R` to review all settings before saving.
+- **Save & quit**: `S` saves to `.env`, `Q` quits without saving.
+
+The wizard writes `.env`, auto-generates `CATALOG_JDBC_URI` from the selected PostgreSQL database and port, and includes dashboard reverse-proxy defaults (`DASHBOARD_*`). It also provides setup-preference toggles and prints a guided checklist for stack bootstrapping and dashboard access.
+
 You can still edit `.env` manually and rotate at least:
 
 - `MINIO_ROOT_PASSWORD`
