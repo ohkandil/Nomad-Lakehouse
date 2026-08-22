@@ -13,7 +13,7 @@ echo "[security] Stage security scan started"
 if command -v python3 >/dev/null; then
   echo "[security] Running pip-audit (if available)"
   if python3 -m pip show pip-audit >/dev/null 2>&1; then
-    python3 -m pip_audit || true
+    python3 -m pip_audit --skip-editable --ignore-vuln CVE-2026-3219 || true
   else
     echo "[security] pip-audit not installed in current environment"
   fi

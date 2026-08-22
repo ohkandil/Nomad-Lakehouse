@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Security Status Card -->
+    <div class="card-glass rounded-2xl p-6 relative overflow-hidden border-l-4 {% if status_data.status == 'ok' %}border-emerald-500{% elif status_data.status == 'warn' %}border-amber-500{% else %}border-red-500{% endif %}">
+        <div class="relative">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-semibold text-white">Security Scan</h2>
+                <span class="px-3 py-1 text-sm font-semibold rounded-full {% if status_data.status == 'ok' %}bg-emerald-900/30 text-emerald-300{% elif status_data.status == 'warn' %}bg-amber-900/30 text-amber-300{% else %}bg-red-900/30 text-red-300{% endif %}">
+                    {{ status_data.status|upper }}
+                </span>
+            </div>
+            <p class="text-slate-400 mb-4">{{ status_data.detail }}</p>
+            <div class="flex flex-wrap gap-4 text-sm">
+                <span class="flex items-center gap-1 text-slate-500">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Last Scan: {{ status_data.generated_at }}</span>
+                </span>
+                {% if status_data.report_path %}
+                <a href="{{ status_data.report_path }}" target="_blank" class="text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View Report
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Severity Counts -->
+    {% if high_count is not none or critical_count is not none %}
+    <div class="grid gap-4 md:grid-cols-2">
+        {% if high_count is not none %}
+        <div class="card-glass rounded-2xl p-6 relative overflow-hidden border-l-4 border-amber-500">
+            <div class="relative">
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">High Severity</p>
+                <p class="mt-2 text-4xl font-bold text-amber-400">{{ high_count }}</p>
+                <p class="mt-1 text-xs text-slate-500">Vulnerabilities found</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if critical_count is not none %}
+        <div class="card-glass rounded-2xl p-6 relative overflow-hidden border-l-4 border-red-500">
+            <div class="relative">
+                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Critical Severity</p>
+                <p class="mt-2 text-4xl font-bold text-red-400">{{ critical_count }}</p>
+                <p class="mt-1 text-xs text-slate-500">Vulnerabilities found</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Security Actions -->
+    <div class="card-glass rounded-2xl p-6 border border-slate-700/50">
+        <h2 class="text-lg font-semibold text-white mb-4">Security Actions</h2>
+        <div class="flex flex-wrap gap-4">
+            <button
+                hx-post="/api/security/scan"
+                hx-trigger="click"
+                hx-target="#security-results"
+                class="px-4 py-2.5 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/30 hover:border-indigo-500/50 text-sm font-medium transition-all"
+            >
+                Run Security Scan
+            </button>
+            <button
+                hx-post="/api/security/remediate"
+                hx-trigger="click"
+                hx-target="#security-results"
+                class="px-4 py-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 hover:bg-amber-500/30 hover:border-amber-500/50 text-sm font-medium transition-all"
+            >
+                Remediate Vulnerabilities
+            </button>
+            <button
+                hx-get="/api/status/security"
+                hx-trigger="click"
+                hx-target="#security-results"
+                class="px-4 py-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30 hover:border-emerald-500/50 text-sm font-medium transition-all"
+            >
+                Refresh Status
+            </button>
+        </div>
+    </div>
+
+    <!-- Security Results -->
+    <div id="security-results" class="card-glass rounded-2xl p-6">
+        <h3 class="text-lg font-semibold text-white mb-4">Scan Output</h3>
+        <pre class="bg-slate-900/50 rounded-xl p-4 text-xs text-slate-300 overflow-x-auto max-h-96" id="security-output">
+            Click "Run Security Scan" to start a new scan...
+        </pre>
+    </div>
+</div>
+
+<script>
+    // HTMX event handlers for security actions
+    document.body.addEventListener('htmx:beforeRequest', function(evt) {
+        if (evt.detail.target.id === 'security-output') {
+            document.getElementById('security-output').innerText = 'Running...';
+        }
+    });
+
+    document.body.addEventListener('htmx:afterRequest', function(evt) {
+        if (evt.detail.target.id === 'security-output') {
+            // Response will be swapped in automatically
+        }
+    });
+</script>
+{% endblock %}

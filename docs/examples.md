@@ -3,31 +3,57 @@
 ## 1. Run Starter Pipeline
 
 ```bash
-sudo ./scripts/setup_python_env.sh
+INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
 python3 scripts/create_bronze_tables.py
 python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
-## 2. Inspect Outputs
+## 2. Inspect Bronze Contract
+
+```bash
+cat data/contracts/bronze_orders_contract.json
+```
+
+## 3. Query Bronze Table (DuckDB)
+
+```bash
+python3 - <<'PY'
+import duckdb
+con = duckdb.connect("data/output/lakehouse.duckdb")
+print(con.execute("SELECT order_date, COUNT(*) AS orders, SUM(amount) AS amount FROM bronze.orders GROUP BY 1 ORDER BY 1").fetchdf())
+PY
+```
+
+## 4. Inspect Silver and Gold Outputs
 
 ```bash
 cat data/output/silver_orders.csv
 cat data/output/gold_daily_revenue.csv
 ```
 
-## 3. Service Verification
+## 5. Service Verification
 
 ```bash
 sudo ./scripts/healthcheck.sh
 docker compose ps
 ```
 
-## 4. Security Verification
+## 6. Security Verification
 
 ```bash
 sudo ./scripts/security_scan.sh
 python3 -m pip_audit
 python3 -m bandit -r scripts
+```
+
+## 7. Dashboard API Examples
+
+```bash
+python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
+curl -fsS http://127.0.0.1:8088/api/status/overview
+curl -fsS http://127.0.0.1:8088/api/status/pipeline
+curl -fsS http://127.0.0.1:8088/api/status/quality
+curl -fsS http://127.0.0.1:8088/api/status/security
 ```

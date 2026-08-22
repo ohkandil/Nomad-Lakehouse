@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-  exec sudo -E bash "$0" "$@"
+if [[ "${EUID:-$(id -u)}" -eq 0 ]]; then
+  echo "[python-setup] Do not run this script as root/sudo."
+  echo "[python-setup] Run as your normal user so .venv and *.egg-info stay writable."
+  exit 1
 fi
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -11,7 +13,7 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 INSTALL_PROFILE="${INSTALL_PROFILE:-dev}"
 
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
-  echo "[python-setup] ${PYTHON_BIN} not found. Install Python 3.11+ and retry."
+  echo "[python-setup] ${PYTHON_BIN} not found. Install Python 3.12+ and retry."
   exit 1
 fi
 

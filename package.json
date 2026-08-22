@@ -1,0 +1,28 @@
+{
+  "name": "nomad-lakehouse",
+  "version": "1.0.0",
+  "description": "<p align=\"center\">\r  <img src=\"docs/assets/nomad-lakehouse-logo.png\" alt=\"Nomad Lakehouse Logo\" width=\"260\">\r </p>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ohkandil/Nomad-Lakehouse.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/ohkandil/Nomad-Lakehouse/issues"
+  },
+  "homepage": "https://github.com/ohkandil/Nomad-Lakehouse#readme",
+  "devDependencies": {
+    "@opentui/core": "^0.5.3",
+    "@opentui/keymap": "^0.5.3",
+    "@opentui/react": "^0.5.3"
+  }
+}

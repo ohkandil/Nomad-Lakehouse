@@ -1,0 +1,17 @@
+[Unit]
+Description=Nomad Lakehouse Dashboard (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory={{PROJECT_ROOT}}
+Environment=PYTHONUNBUFFERED=1
+Environment=DASHBOARD_HOST=127.0.0.1
+Environment=DASHBOARD_PORT=8088
+ExecStart={{PROJECT_ROOT}}/.venv/bin/python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

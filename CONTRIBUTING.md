@@ -14,11 +14,13 @@ Thanks for contributing to Nomad Lakehouse.
 
 ```bash
 chmod +x scripts/*.sh
-sudo ./scripts/setup_python_env.sh
+./scripts/setup_python_env.sh
 source .venv/bin/activate
 ```
 
 ## Pull Request Checklist
+
+Policy: every implementation change must include matching CI/CD test coverage updates. If behavior changes, add or adjust at least one automated CI validation step (unit, integration, or smoke test).
 
 Run these before opening a PR:
 
@@ -35,11 +37,12 @@ For operational workflow changes, include updates to:
 - `docs/setup.md`
 - `docs/ubuntu-deploy.md`
 - `docs/week1-closure.md` (when Week 1 closure evidence is affected)
+- `docs/week2-closure.md` (when Bronze and catalog behavior changes)
 
 If `pip-audit` reports issues:
 
 ```bash
-sudo ./scripts/remediate_python_vulns.sh
+./scripts/remediate_python_vulns.sh
 python3 -m pip_audit
 ```
 

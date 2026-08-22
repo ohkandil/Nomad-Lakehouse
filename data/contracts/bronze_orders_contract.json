@@ -1,0 +1,48 @@
+{
+  "dataset": "orders",
+  "layer": "bronze",
+  "version": "1.0.0",
+  "required_columns": [
+    {
+      "name": "order_id",
+      "type": "int",
+      "constraints": [
+        "required",
+        "min=1"
+      ]
+    },
+    {
+      "name": "customer_id",
+      "type": "int",
+      "constraints": [
+        "required",
+        "min=1"
+      ]
+    },
+    {
+      "name": "order_date",
+      "type": "date",
+      "constraints": [
+        "required",
+        "iso-8601"
+      ]
+    },
+    {
+      "name": "amount",
+      "type": "decimal",
+      "constraints": [
+        "required",
+        "min=0"
+      ]
+    },
+    {
+      "name": "status",
+      "type": "enum",
+      "constraints": [
+        "required",
+        "Pending|Completed|Cancelled"
+      ]
+    }
+  ],
+  "idempotency": "Bronze load uses CREATE OR REPLACE semantics in DuckDB"
+}
