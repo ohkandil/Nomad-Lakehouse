@@ -35,6 +35,7 @@ class PipelineStageStatus(BaseModel):
 
 class PipelineStatus(BaseModel):
     generated_at: str = Field(default_factory=utc_now_iso)
+    overall_status: StatusLevel = "unknown"
     stages: list[PipelineStageStatus]
 
 

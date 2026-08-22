@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
@@ -13,7 +15,7 @@ router = APIRouter()
 
 # Create initial admin user
 @router.get("/init-admin", status_code=status.HTTP_201_CREATED)
-def create_admin_user(db: Session = Depends(get_db)) -> UserRead:
+def create_admin_user(db: Annotated[Session, Depends(get_db)]) -> UserRead:
     """Create admin user if not exists."""
     existing_user = db.query(User).filter(User.email == "admin@nomad.lakehouse").first()
     if existing_user:

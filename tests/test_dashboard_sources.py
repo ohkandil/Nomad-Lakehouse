@@ -32,7 +32,13 @@ def test_security_status_handles_missing_report() -> None:
 def test_overview_api_responds() -> None:
     response = client.get("/api/status/overview")
     assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/html")
+    assert response.headers["content-type"].startswith("application/json")
+    payload = response.json()
+    assert {"ok", "warn", "fail", "unknown"} >= {payload["overall_status"]}
+    item_names = {item["name"] for item in payload["items"]}
+    assert "MinIO" in item_names
+    assert any(name.startswith("PostgreSQL") for name in item_names)
+    assert "Pipeline" in item_names
 
 
 def test_pipeline_api_responds() -> None:

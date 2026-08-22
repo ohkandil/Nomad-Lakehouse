@@ -70,10 +70,10 @@
                         <h1 class="text-3xl font-bold tracking-tight text-white">{{ title }}</h1>
                         <p class="mt-2 text-sm text-slate-400">Operational health and medallion pipeline visibility for your homelab.</p>
                     </div>
-                    <div id="status-indicator" hx-get="/api/status/overview" hx-trigger="load, every 30s" hx-target="this" hx-swap="innerHTML">
+                    <div id="status-indicator">
                         <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 border border-slate-700">
-                            <div class="h-2 w-2 rounded-full bg-slate-500 animate-pulse"></div>
-                            <span class="text-xs font-medium text-slate-400 italic">Syncing...</span>
+                            <div id="status-dot" class="h-2 w-2 rounded-full bg-slate-500 animate-pulse"></div>
+                            <span id="status-text" class="text-xs font-medium text-slate-400 italic">Syncing...</span>
                         </div>
                     </div>
                 </div>
@@ -104,6 +104,40 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
     <script>
+        (function() {
+            const dotColors = {
+                ok: 'bg-emerald-400',
+                warn: 'bg-amber-400',
+                fail: 'bg-red-400',
+                unknown: 'bg-slate-500'
+            };
+
+            function refreshStatusIndicator() {
+                fetch('/api/status/overview')
+                    .then(response => {
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        return response.json();
+                    })
+                    .then(data => {
+                        const dot = document.getElementById('status-dot');
+                        const text = document.getElementById('status-text');
+                        if (!dot || !text) return;
+                        dot.className = `h-2 w-2 rounded-full ${dotColors[data.overall_status] || dotColors.unknown}`;
+                        text.textContent = data.overall_status.toUpperCase();
+                        text.className = 'text-xs font-medium';
+                    })
+                    .catch(() => {
+                        const dot = document.getElementById('status-dot');
+                        const text = document.getElementById('status-text');
+                        if (dot) dot.className = 'h-2 w-2 rounded-full bg-red-400 animate-pulse';
+                        if (text) { text.textContent = 'Offline'; text.className = 'text-xs font-medium'; }
+                    });
+            }
+
+            document.addEventListener('DOMContentLoaded', refreshStatusIndicator);
+            setInterval(refreshStatusIndicator, 30000);
+        })();
+
         document.body.addEventListener('htmx:afterRequest', function(evt) {
             const now = new Date();
             document.getElementById('last-updated-time').innerText = `Last Sync: ${now.toLocaleTimeString()}`;

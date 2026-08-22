@@ -125,7 +125,7 @@ python3 -m uvicorn dashboard.app:app --host 127.0.0.1 --port 8088
 | Route         | View                                               |
 | ------------- | -------------------------------------------------- |
 | `/`         | Overview — service health at a glance (auth-gated) |
-| `/login`    | HTTP Basic auth login (admin/admin for demo)       |
+| `/login`    | Form-based login page (admin/admin for demo)       |
 | `/pipeline` | Pipeline health — Bronze/Silver/Gold run status   |
 | `/quality`  | Data quality — contract adherence and row counts  |
 | `/security` | Security — audit results and vulnerability status |

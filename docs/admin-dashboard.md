@@ -29,7 +29,7 @@ The dashboard should expose these operator views:
 1. FastAPI app serves server-rendered HTML pages for the four operator views.
 1. Source adapters collect status from local files and service checks.
 1. UI renders cards/tables/charts from the collected status payloads.
-1. Auth: HTTP Basic login page (demo: admin/admin) + JWT bearer tokens via fastapi-users; session cookie middleware protects `/`.
+1. Auth: form-based login (`POST /login` with session cookie) protects `/`; JWT bearer tokens via fastapi-users remain available under `/auth`.
  
 Suggested runtime command:
 
@@ -49,7 +49,12 @@ Implemented routes:
 1. `GET /`:
    Overview dashboard page (redirects to `/login` if not authenticated).
 1. `GET /login`:
-   Login page with HTTP Basic auth (admin/admin for demo).
+   Login page (demo credentials: admin/admin).
+1. `POST /login`:
+   Form-based login (`username`/`password` fields). Sets the session cookie and
+   redirects to `/` on success, back to `/login?error=invalid` on failure.
+1. `GET /logout`:
+   Clears the session and redirects to `/login`.
 1. `GET /pipeline`:
    Bronze/Silver/Gold health page.
 1. `GET /quality`:
@@ -57,7 +62,9 @@ Implemented routes:
 1. `GET /security`:
    Security and scan summary page.
 1. `GET /api/status/overview`:
-   **HTML page** for service health overview (server-rendered template).
+   **JSON** overview payload (`overall_status` plus `items` for MinIO,
+   PostgreSQL Catalog, and Pipeline) consumed by the UI status indicator and
+   overview cards; polls every 30 seconds.
 1. `GET /api/status/pipeline`:
    **HTML page** for medallion stage health (server-rendered template).
 1. `GET /api/status/quality`:
@@ -67,7 +74,9 @@ Implemented routes:
 1. `GET /health`:
    JSON health check endpoint (`{"status": "ok"}`).
 1. `GET /auth/jwt/login`:
-   JWT token login endpoint (fastapi-users).
+    JWT token login endpoint (fastapi-users).
+1. `GET /init-admin`:
+    Creates the default admin user if missing (idempotent).
 
 ## Health Signal Definitions
 
@@ -132,7 +141,7 @@ Verification:
 
 ```bash
 curl -fsS http://127.0.0.1:8088/health
-curl -fsS http://127.0.0.1:8088/api/status/overview   # returns HTML page
+curl -fsS http://127.0.0.1:8088/api/status/overview   # returns JSON payload
 curl -k -u admin:'change-me-strong-password' https://dashboard.home.arpa/api/status/overview
 ```
 
@@ -162,7 +171,7 @@ Verify:
 
 ```bash
 curl -fsS http://127.0.0.1:8088/health
-curl -fsS http://127.0.0.1:8088/api/status/overview   # returns HTML page
+curl -fsS http://127.0.0.1:8088/api/status/overview   # returns JSON payload
 curl -k -u <user>:<password> https://<dashboard-domain>/api/status/overview
 ```
 

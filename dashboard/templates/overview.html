@@ -179,7 +179,7 @@
                 }
 
                 // PostgreSQL status
-                const postgresItem = data.items.find(item => item.name === 'PostgreSQL');
+                const postgresItem = data.items.find(item => item.name.startsWith('PostgreSQL'));
                 if (postgresItem) {
                     const postgresClasses = getStatusClasses(postgresItem.status);
                     document.getElementById('postgres-status-value').innerText = postgresItem.status.toUpperCase();

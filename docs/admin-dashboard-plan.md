@@ -95,12 +95,13 @@ Proposed additions:
 1. `dashboard/static/` (css and chart js assets).
 1. `scripts/run_dashboard.sh` (local launcher for Linux).
 1. `tests/test_dashboard_sources.py` (unit tests for health data adapters).
+1. `tests/test_dashboard_login.py` (login flow and session tests).
 
 ## API and Data Contracts
 
 Internal API endpoints to support UI:
 
-1. `GET /api/status/overview`
+1. `GET /api/status/overview` (JSON: `overall_status` + `items`)
 1. `GET /api/status/pipeline`
 1. `GET /api/status/quality`
 1. `GET /api/status/security`

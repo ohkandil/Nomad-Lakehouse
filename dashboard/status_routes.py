@@ -3,12 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import structlog
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from dashboard.health_sources import collect_overview_status
+from dashboard.health_sources import _status_rollup, collect_overview_status
+from dashboard.models import HealthItem, OverviewStatus
 from dashboard.pipeline_sources import collect_pipeline_status, collect_quality_status
 from dashboard.security_sources import collect_security_status
 
@@ -27,35 +28,38 @@ class HealthResponse(BaseModel):
     hint: str | None = None
 
 
-@router.get("/api/status/overview", response_class=HTMLResponse)
-def get_overview(request: Request) -> HTMLResponse:
-    """Get overview status."""
+@router.get("/api/status/overview", response_model=OverviewStatus)
+def get_overview() -> OverviewStatus:
+    """Get overview status as JSON."""
     try:
-        status_data = collect_overview_status()
-
-        return templates.TemplateResponse(
-            request,
-            "overview.html",
-            {
-                "request": request,
-                "title": "Overview",
-                "api_endpoint": "/api/status/overview",
-                "status_data": status_data,
-                "quality_checks": []
-            }
-        )
+        overview = collect_overview_status()
+        pipeline = collect_pipeline_status()
     except Exception as e:
         logger.exception("Error collecting overview status")
-        return templates.TemplateResponse(
-            request,
-            "overview.html",
-            {
-                "request": request,
-                "title": "Overview",
-                "api_endpoint": "/api/status/overview",
-                "error": str(e)
-            }
-        )
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+    pipeline_hint = (
+        None
+        if pipeline.overall_status == "ok"
+        else "Run the pipeline scripts: bronze setup, bronze_to_silver, silver_to_gold"
+    )
+    items = [
+        *overview.items,
+        HealthItem(
+            name="Pipeline",
+            status=pipeline.overall_status,
+            detail=" | ".join(
+                f"{stage.layer}: {stage.row_count if stage.row_count is not None else 'n/a'} rows"
+                for stage in pipeline.stages
+            ),
+            hint=pipeline_hint,
+        ),
+    ]
+
+    return OverviewStatus(
+        overall_status=_status_rollup(item.status for item in items),
+        items=items,
+    )
 
 
 @router.get("/api/status/pipeline", response_class=HTMLResponse)
