@@ -28,9 +28,9 @@ The bootstrap script will:
 
 ---
 
-## 🖥️ Setup Wizard (npm)
+## 🖥️ Setup Wizard & Service Health (npm)
 
-The setup wizard is a TypeScript/React application managed via npm in the `tui/` directory. It provides a guided terminal interface to configure your `.env` file, ports, and credentials.
+The TUI is a TypeScript/React application built with [Ink](https://github.com/vadimdemedes/ink) and managed via npm in the `tui/` directory. It provides two views: a guided wizard to configure your `.env` file, ports, and credentials, and a live Service Health dashboard showing endpoint, resolved IP addresses, status, and latency for MinIO API, MinIO Console, PostgreSQL Catalog, and the Admin Dashboard.
 
 ```bash
 cd tui
@@ -38,7 +38,7 @@ npm install
 npm start
 ```
 
-**Note:** The TUI requires native `@opentui` binaries. If you encounter issues with the native FFI, ensure you're running on a supported platform (Linux x64).
+**Note:** The TUI requires Node.js 20+; it uses no native binaries. Press `[Tab]` to switch views, `[r]` to refresh health checks, `[q]` to quit.
 
 ### Admin Dashboard
 
@@ -93,7 +93,7 @@ cp .env.example .env
 chmod +x scripts/*.sh
 INSTALL_PROFILE=lakehouse ./scripts/setup_python_env.sh
 source .venv/bin/activate
-cd tui && npm install && npm start  # Interactive setup wizard (TypeScript + @opentui)
+cd tui && npm install && npm start  # Interactive setup wizard + service health (TypeScript + Ink)
 cd ..
 sudo ./scripts/setup_minio.sh
 python3 scripts/create_bronze_tables.py
@@ -101,14 +101,13 @@ python3 scripts/bronze_to_silver.py
 python3 scripts/silver_to_gold.py
 ```
 
-### What the TUI wizard sets up
+### What the TUI provides
 
-The setup wizard (`tui/`) is a TypeScript/React terminal application built on the `@opentui` library. It gives you an interactive terminal UI with:
+The TUI (`tui/`) is a TypeScript/React terminal application built on the [Ink](https://github.com/vadimdemedes/ink) library. It gives you an interactive terminal UI with:
 
 - ✏️ **15 configuration fields** — MinIO admin credentials, S3 ports, PostgreSQL connection, bucket name, AWS region, dashboard domain/auth/upstream/CIDRs
-- ⚙️ **6 setup actions** — toggle stack auto-start, Python environment creation, pipeline execution, dashboard service, and Caddy HTTPS proxy
-- ✅ **Inline validation** — password length, bucket naming, port conflicts, hostname format — all checked before saving
-- 🎨 **Depth-styled UI** — title bar, raised button highlights, bordered panels with shadows, and a recessed status bar with color-coded feedback (green success / red error)
+- 🩺 **Service Health dashboard** — live status, endpoint, resolved IPs, and latency for MinIO API, MinIO Console, PostgreSQL Catalog, and the Admin Dashboard (auto-refresh every 10s)
+- 💾 **Safe .env merging** — existing values are pre-filled and preserved; saving writes a merged `.env` at the repository root
 
 When you press **S** to save, the wizard writes `.env`, validates everything, and prints a guided post-save checklist tailored to your toggle selections.
 
@@ -156,7 +155,7 @@ All four dashboard views are served behind HTTPS with basic-auth credentials you
 - 📊 Four-view admin dashboard with API-driven status
 - 🔐 Security gate: `pip-audit`, Bandit, and remediation scripts
 - 🤖 CI pipeline with lint (Ruff), typing (mypy), tests (pytest), and security
-- 🎨 Interactive terminal-based setup wizard (TypeScript + `@opentui`)
+- 🎨 Interactive terminal-based setup wizard + service-health dashboard (TypeScript + Ink)
 
 ---
 
@@ -260,8 +259,8 @@ PY
 │   ├── healthcheck.sh            # Service health probes
 │   └── security_scan.sh          # pip-audit + Bandit runner
 ├── tui/
-│   ├── src/                      # TypeScript setup wizard source
-│   └── package.json              # npm deps (@opentui)
+│   ├── src/                      # TypeScript TUI source (wizard + service health)
+│   └── package.json              # npm deps (Ink, React)
 ├── dashboard/
 │   ├── app.py                    # FastAPI application
 │   ├── health_sources.py         # Service health collectors

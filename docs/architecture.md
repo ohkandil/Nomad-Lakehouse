@@ -15,7 +15,7 @@
 - DuckDB: Local analytics and Bronze/Silver/Gold table materialization
 - Docker Compose: Service orchestration on a single host
 - FastAPI dashboard: Four-view admin UI (overview / pipeline / quality / security) with JWT auth via fastapi-users and session middleware
-- Setup wizard (TypeScript + `@opentui`): interactive terminal configuration of `.env`
+- Setup wizard + service-health dashboard (TypeScript + React via Ink): interactive terminal configuration of `.env` and live monitoring of MinIO, PostgreSQL, and the admin dashboard
 
 ## Data Flow
 

@@ -16,11 +16,16 @@ chmod +x scripts/*.sh
 ./scripts/bootstrap.sh
 ```
 
-The bootstrap script automates environment configuration, launches the **npm-based Setup Wizard** (in `tui/`) for environment configuration, starts core Docker services, and prepares the Python environment.
+The bootstrap script automates environment configuration, launches the **npm-based TUI** (in `tui/`) for environment configuration and service-health monitoring, starts core Docker services, and prepares the Python environment.
 
-## Setup Wizard (TUI)
+## Setup Wizard & Service Health (TUI)
 
-The setup wizard is a TypeScript/React application managed via npm in the `tui/` directory. It provides a guided terminal interface to configure your `.env` file, ports, and credentials.
+The TUI is a TypeScript/React application built with [Ink](https://github.com/vadimdemedes/ink) and managed via npm in the `tui/` directory. It has two views:
+
+- **Setup Wizard** (`w`): guided terminal interface to configure your `.env` file, ports, and credentials. Existing `.env` values are pre-filled and preserved; saving writes a merged `.env` at the repository root.
+- **Service Health** (`d`): live dashboard of MinIO API, MinIO Console, PostgreSQL Catalog, and Admin Dashboard — showing endpoint host:port, resolved IP addresses, status, latency, and remediation hints. Auto-refreshes every 10 seconds (`r` refreshes immediately).
+
+Keybindings: `[Tab]`/`[Shift+Tab]` switch views, `[r]` refresh health checks, `[q]` quit.
 
 ```bash
 cd tui
@@ -28,7 +33,7 @@ npm install
 npm start
 ```
 
-**Note:** The TUI requires native `@opentui` binaries. If you encounter issues with the native FFI, ensure you're running on a supported platform (Linux x64).
+**Note:** The TUI requires Node.js 20+ and no native binaries. If checks show `unresolved` IPs or `fail` statuses, ensure Docker services are up (`docker compose ps`).
 
 ## Start Services
 

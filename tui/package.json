@@ -1,28 +1,24 @@
 {
   "name": "nomad-lakehouse-tui",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npx tsx src/index.tsx",
-    "build": "tsc",
-    "start": "npx tsx src/index.tsx"
+    "dev": "tsx src/index.tsx",
+    "start": "tsx src/index.tsx",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@opentui/core": "^0.5.3",
-    "@opentui/keymap": "^0.5.3",
-    "@opentui/react": "^0.5.3",
-    "@types/node": "^26.2.0",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4"
+    "ink": "^7.1.1",
+    "ink-text-input": "^6.0.0",
+    "react": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
-    "ts-node": "^10.9.2",
     "tsx": "^4.19.0",
     "typescript": "^5.9.3",
-    "vite": "^8.2.1"
+    "vitest": "^3.2.4"
   }
 }

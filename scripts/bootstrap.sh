@@ -93,28 +93,25 @@ pushd "$TUI_DIR" >/dev/null
 export TERM="${TERM:-xterm-256color}"
 
 if [[ "$USE_BUN" -eq 1 ]]; then
-    echo "Using Bun for OpenTUI"
+    echo "Using Bun for TUI"
     rm -rf node_modules package-lock.json bun.lockb
     bun install
     bun run src/index.tsx
 else
-    echo "Using Node/npm for OpenTUI"
+    echo "Using Node/npm for TUI"
 
     NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 
-    if (( NODE_MAJOR < 26 )); then
-        echo "Error: OpenTUI native renderer under Node requires a newer Node runtime."
+    if (( NODE_MAJOR < 20 )); then
+        echo "Error: the TUI requires Node.js 20 or newer."
         echo "Detected Node $NODE_VERSION."
-        echo "Recommended fixes:"
-        echo "  1) Install Bun in WSL and rerun bootstrap, or"
-        echo "  2) Use Node 26+ with experimental FFI support."
         popd >/dev/null
         exit 1
     fi
 
     rm -rf node_modules package-lock.json
     npm install
-    node --experimental-ffi node_modules/tsx/dist/cli.mjs src/index.tsx
+    npx tsx src/index.tsx
 fi
 
 popd >/dev/null
